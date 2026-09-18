@@ -36,7 +36,6 @@ try {
     $downloadRoot = New-BoundedBuildDirectory -RepositoryRoot $repositoryRoot -RelativePath 'downloads'
     [void] (New-BoundedBuildDirectory -RepositoryRoot $repositoryRoot -RelativePath 'cache')
     [void] (New-BoundedBuildDirectory -RepositoryRoot $repositoryRoot -RelativePath 'sources')
-    [void] (New-BoundedBuildDirectory -RepositoryRoot $repositoryRoot -RelativePath 'install')
     [void] (New-BoundedBuildDirectory -RepositoryRoot $repositoryRoot -RelativePath 'artifacts')
 
     Write-Host "Target: $Target"

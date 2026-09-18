@@ -6,21 +6,26 @@ if not defined BEDRIOX_NATIVE_PHP_DEPS_SOURCE exit /b 12
 if not defined BEDRIOX_NATIVE_LEVELDB_SOURCE exit /b 13
 if not defined BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE exit /b 14
 if not defined BEDRIOX_NATIVE_WORK_ROOT exit /b 15
-if not defined BEDRIOX_NATIVE_INSTALL_ROOT exit /b 16
+if not defined BEDRIOX_NATIVE_RUNTIME_STAGE exit /b 16
 if not defined BEDRIOX_NATIVE_CMAKE_EXE exit /b 17
+if not defined BEDRIOX_NATIVE_STAGE_SCRIPT exit /b 18
+if not defined BEDRIOX_NATIVE_REPOSITORY_ROOT exit /b 19
+if not defined BEDRIOX_NATIVE_INVOCATION_ROOT exit /b 20
 
 set "PHP_SOURCE=%BEDRIOX_NATIVE_PHP_SOURCE%"
 set "PHP_DEPS_SOURCE=%BEDRIOX_NATIVE_PHP_DEPS_SOURCE%"
 set "LEVELDB_SOURCE=%BEDRIOX_NATIVE_LEVELDB_SOURCE%"
 set "LEVELDB_EXTENSION_SOURCE=%BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE%"
 set "WORK_ROOT=%BEDRIOX_NATIVE_WORK_ROOT%"
-set "INSTALL_ROOT=%BEDRIOX_NATIVE_INSTALL_ROOT%"
+set "RUNTIME_STAGE=%BEDRIOX_NATIVE_RUNTIME_STAGE%"
 set "CMAKE_EXE=%BEDRIOX_NATIVE_CMAKE_EXE%"
+set "STAGE_SCRIPT=%BEDRIOX_NATIVE_STAGE_SCRIPT%"
 
 if not exist "%PHP_SOURCE%\buildconf.bat" exit /b 21
 if not exist "%LEVELDB_SOURCE%\CMakeLists.txt" exit /b 22
 if not exist "%LEVELDB_EXTENSION_SOURCE%\config.w32" exit /b 23
 if not exist "%CMAKE_EXE%" exit /b 24
+if not exist "%STAGE_SCRIPT%" exit /b 61
 
 set "PHP_BUILD=%WORK_ROOT%\deps"
 set "LEVELDB_BUILD=%WORK_ROOT%\leveldb"
@@ -62,21 +67,18 @@ xcopy "%LEVELDB_EXTENSION_SOURCE%\*" "%PHP_SOURCE%\ext\leveldb\" /E /I /Q /Y >nu
 
 pushd "%PHP_SOURCE%" || exit /b 36
 call buildconf.bat --force || (popd & exit /b 37)
-call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix="%INSTALL_ROOT%" --with-config-file-path="%INSTALL_ROOT%" --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%" || (popd & exit /b 38)
+call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix=bedriox-runtime --with-config-file-path=bedriox-runtime --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%" || (popd & exit /b 38)
 nmake || (popd & exit /b 39)
-nmake install || (popd & exit /b 40)
+nmake snap || (popd & exit /b 40)
 cl /? > "%WORK_ROOT%\compiler-identity.txt" 2>&1
 link /? > "%WORK_ROOT%\linker-identity.txt" 2>&1
 popd
 
-set "PHP_EXE="
-for /r "%INSTALL_ROOT%" %%F in (php.exe) do if not defined PHP_EXE set "PHP_EXE=%%~fF"
-if not defined PHP_EXE exit /b 53
-for %%F in ("%PHP_EXE%") do set "PHP_BIN=%%~dpF"
-set "PHP_LEVELDB_DLL="
-for /r "%INSTALL_ROOT%" %%F in (php_leveldb.dll) do if not defined PHP_LEVELDB_DLL set "PHP_LEVELDB_DLL=%%~fF"
-if not defined PHP_LEVELDB_DLL exit /b 54
-copy /Y "%PHP_BUILD%\bin\leveldb.dll" "%PHP_BIN%leveldb.dll" >nul || exit /b 55
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%STAGE_SCRIPT%" -PhpSource "%PHP_SOURCE%" -RuntimeStage "%RUNTIME_STAGE%" -LevelDbDll "%PHP_BUILD%\bin\leveldb.dll" -RepositoryRoot "%BEDRIOX_NATIVE_REPOSITORY_ROOT%" -InvocationRoot "%BEDRIOX_NATIVE_INVOCATION_ROOT%" -ReportRoot "%WORK_ROOT%" || exit /b 53
+set "PHP_BIN=%RUNTIME_STAGE%\"
+set "PHP_LEVELDB_DLL=%RUNTIME_STAGE%\ext\php_leveldb.dll"
+if not exist "%PHP_BIN%php.exe" exit /b 54
+if not exist "%PHP_LEVELDB_DLL%" exit /b 55
 if not exist "%PHP_BIN%leveldb.dll" exit /b 56
 
 dumpbin /nologo /dependents "%PHP_LEVELDB_DLL%" > "%WORK_ROOT%\php-leveldb-dependencies.txt" || exit /b 57

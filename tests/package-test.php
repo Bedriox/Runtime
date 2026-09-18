@@ -79,6 +79,43 @@ try {
     packageTestEnsure(!isset($inventory['runtime-manifest.json']), 'Manifest inventoried itself.');
     packageTestEnsure(array_keys($inventory['php']) === ['bytes', 'sha256'], 'Inventory metadata shape is incorrect.');
 
+    $windowsRuntime = $testParent . DIRECTORY_SEPARATOR . 'windows-runtime';
+    mkdir($windowsRuntime . DIRECTORY_SEPARATOR . 'ext', 0755, true);
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php.exe', 'pe');
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php84.dll', 'engine');
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'leveldb.dll', 'leveldb');
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'php_leveldb.dll', 'extension');
+    PackageBuilder::assertNativeRuntimeLayout($windowsRuntime, 'windows-x86_64');
+
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php.lib', 'development');
+    $caught = false;
+    try {
+        PackageBuilder::assertNativeRuntimeLayout($windowsRuntime, 'windows-x86_64');
+    } catch (RuntimeException) {
+        $caught = true;
+    }
+    packageTestEnsure($caught, 'Windows development import library was accepted into the runtime stage.');
+    unlink($windowsRuntime . DIRECTORY_SEPARATOR . 'php.lib');
+
+    mkdir($windowsRuntime . DIRECTORY_SEPARATOR . 'include');
+    $caught = false;
+    try {
+        PackageBuilder::assertNativeRuntimeLayout($windowsRuntime, 'windows-x86_64');
+    } catch (RuntimeException) {
+        $caught = true;
+    }
+    packageTestEnsure($caught, 'Windows SDK directory was accepted into the runtime stage.');
+    rmdir($windowsRuntime . DIRECTORY_SEPARATOR . 'include');
+
+    unlink($windowsRuntime . DIRECTORY_SEPARATOR . 'leveldb.dll');
+    $caught = false;
+    try {
+        PackageBuilder::assertNativeRuntimeLayout($windowsRuntime, 'windows-x86_64');
+    } catch (RuntimeException) {
+        $caught = true;
+    }
+    packageTestEnsure($caught, 'Windows runtime stage without leveldb.dll was accepted.');
+
     $caught = false;
     try {
         PackageBuilder::assertNewDirectoryBelow($testParent . DIRECTORY_SEPARATOR . 'escape', $outputParent, 'Escaping package');

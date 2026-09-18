@@ -118,11 +118,12 @@ function Expand-PinnedArchive {
 
 $sourceRoot = Join-Path $InvocationRoot 'sources'
 $workRoot = Join-Path $InvocationRoot 'work'
-$installRoot = Join-Path $InvocationRoot 'install'
-foreach ($path in @($sourceRoot, $workRoot, $installRoot)) {
+$runtimeStage = Join-Path $InvocationRoot 'runtime-stage'
+foreach ($path in @($sourceRoot, $workRoot)) {
     if (Test-Path -LiteralPath $path) { throw "Native stage path already exists: $path" }
     [void] (New-Item -ItemType Directory -Path $path)
 }
+if (Test-Path -LiteralPath $runtimeStage) { throw "Native stage path already exists: $runtimeStage" }
 
 $sdkInput = Get-Input -Id 'php-sdk-binary-tools'
 $sdkDestination = Join-Path $sourceRoot 'php-sdk-binary-tools'
@@ -168,7 +169,8 @@ if (-not (Test-Path -LiteralPath $starter -PathType Leaf)) {
 }
 
 $driver = Join-Path $PSScriptRoot 'native-build.cmd'
-foreach ($path in @($starter, $driver, $phpSource, $depsSource, $leveldbSource, $extensionSource, $workRoot, $installRoot, $cmake.FullName)) {
+$stageScript = Join-Path $PSScriptRoot 'stage-runtime.ps1'
+foreach ($path in @($starter, $driver, $stageScript, $phpSource, $depsSource, $leveldbSource, $extensionSource, $workRoot, $runtimeStage, $cmake.FullName, $RepositoryRoot, $InvocationRoot)) {
     Assert-BatchSafePath -Path $path
 }
 
@@ -179,8 +181,11 @@ $nativeEnvironment = [ordered] @{
     BEDRIOX_NATIVE_LEVELDB_SOURCE = $leveldbSource
     BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE = $extensionSource
     BEDRIOX_NATIVE_WORK_ROOT = $workRoot
-    BEDRIOX_NATIVE_INSTALL_ROOT = $installRoot
+    BEDRIOX_NATIVE_RUNTIME_STAGE = $runtimeStage
     BEDRIOX_NATIVE_CMAKE_EXE = $cmake.FullName
+    BEDRIOX_NATIVE_STAGE_SCRIPT = $stageScript
+    BEDRIOX_NATIVE_REPOSITORY_ROOT = $RepositoryRoot
+    BEDRIOX_NATIVE_INVOCATION_ROOT = $InvocationRoot
 }
 foreach ($name in $nativeEnvironment.Keys) {
     if ($null -ne [Environment]::GetEnvironmentVariable($name, 'Process')) {
@@ -201,8 +206,8 @@ try {
 }
 if ($nativeExitCode -ne 0) { throw "Native Windows build failed with exit code $nativeExitCode." }
 
-$phpExe = Get-ChildItem -LiteralPath $installRoot -Filter php.exe -File -Recurse | Select-Object -First 1
-if ($null -eq $phpExe) { throw 'Native build completed without producing php.exe.' }
+$phpExe = Get-Item -LiteralPath (Join-Path $runtimeStage 'php.exe')
+if ($null -eq $phpExe -or -not $phpExe.Exists) { throw 'Native build completed without staging php.exe.' }
 
 $compilerIdentityFile = Join-Path $workRoot 'compiler-identity.txt'
 $linkerIdentityFile = Join-Path $workRoot 'linker-identity.txt'
@@ -225,7 +230,7 @@ try {
         --repository-root=$RepositoryRoot `
         --target=$Target `
         --invocation-root=$InvocationRoot `
-        --source-root=$($phpExe.DirectoryName) `
+        --source-root=$runtimeStage `
         --package-parent=$packageParent `
         --package-root=$packageRoot `
         --artifact-root=$artifactRoot `

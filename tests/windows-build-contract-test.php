@@ -13,7 +13,8 @@ $root = dirname(__DIR__);
 $workflow = file_get_contents($root . '/.github/workflows/native-build.yml');
 $orchestrator = file_get_contents($root . '/scripts/windows/native-build.ps1');
 $driver = file_get_contents($root . '/scripts/windows/native-build.cmd');
-windowsBuildEnsure(is_string($workflow) && is_string($orchestrator) && is_string($driver), 'Windows build contract inputs could not be read.');
+$stage = file_get_contents($root . '/scripts/windows/stage-runtime.ps1');
+windowsBuildEnsure(is_string($workflow) && is_string($orchestrator) && is_string($driver) && is_string($stage), 'Windows build contract inputs could not be read.');
 
 $variables = [
     'BEDRIOX_NATIVE_PHP_SOURCE',
@@ -21,8 +22,11 @@ $variables = [
     'BEDRIOX_NATIVE_LEVELDB_SOURCE',
     'BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE',
     'BEDRIOX_NATIVE_WORK_ROOT',
-    'BEDRIOX_NATIVE_INSTALL_ROOT',
+    'BEDRIOX_NATIVE_RUNTIME_STAGE',
     'BEDRIOX_NATIVE_CMAKE_EXE',
+    'BEDRIOX_NATIVE_STAGE_SCRIPT',
+    'BEDRIOX_NATIVE_REPOSITORY_ROOT',
+    'BEDRIOX_NATIVE_INVOCATION_ROOT',
 ];
 foreach ($variables as $variable) {
     windowsBuildEnsure(str_contains($orchestrator, $variable), "PowerShell orchestration does not set $variable.");
@@ -44,6 +48,25 @@ windowsBuildEnsure(
     preg_match('/%~[1-9]/', $driver) !== 1,
     'The native driver still relies on positional arguments from phpsdk-starter.',
 );
+windowsBuildEnsure(str_contains($driver, '--with-prefix=bedriox-runtime'), 'Windows PHP prefix is not neutral.');
+windowsBuildEnsure(str_contains($driver, '--with-config-file-path=bedriox-runtime'), 'Windows PHP configuration path is not neutral.');
+windowsBuildEnsure(str_contains($driver, 'nmake snap'), 'Windows does not produce the upstream runtime snapshot.');
+windowsBuildEnsure(!str_contains($driver, 'nmake install'), 'Windows still installs the complete PHP development tree.');
+windowsBuildEnsure(!str_contains($driver, '--with-prefix="%'), 'Windows embeds an invocation-specific PHP prefix.');
+
+foreach ([
+    'Get-PeImports',
+    'Get-Command dumpbin.exe -CommandType Application',
+    'PE import is neither packaged nor an allowlisted Windows system DLL',
+    "-notin @('.exe', '.dll')",
+    'Packaged PE contains a private build path',
+    'PE debug data contains an absolute PDB path',
+    '1073741824',
+    'Join-Path $RuntimeStage \'leveldb.dll\'',
+] as $required) {
+    windowsBuildEnsure(str_contains($stage, $required), "Windows runtime staging contract is missing: $required");
+}
+windowsBuildEnsure(!str_contains($stage, 'GetEnvironmentVariable("PATH")'), 'Windows runtime staging falls back to PATH for native libraries.');
 
 foreach ([
     'if not exist "%ZLIB_HEADER%"',
@@ -60,7 +83,7 @@ foreach ([
     'findstr /L /X /C:"zstd_LIBRARIES:FILEPATH=%ZSTD_LIBRARY_CMAKE%"',
     'if not exist "%PHP_BUILD%\\bin\\leveldb.dll"',
     'if not exist "%PHP_BUILD%\\lib\\leveldb.lib"',
-    'copy /Y "%PHP_BUILD%\\bin\\leveldb.dll" "%PHP_BIN%leveldb.dll"',
+    '-LevelDbDll "%PHP_BUILD%\\bin\\leveldb.dll"',
     'dumpbin /nologo /dependents "%PHP_LEVELDB_DLL%"',
     'findstr /I /L /C:"leveldb.dll"',
     'dumpbin /nologo /dependents "%PHP_BIN%leveldb.dll"',

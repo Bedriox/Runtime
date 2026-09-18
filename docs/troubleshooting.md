@@ -57,3 +57,18 @@ or generated file that introduced the path.
 Treat this as a release-blocking relocation failure. Inspect dynamic-library
 resolution, extension paths, CA paths, and generated configuration for absolute
 build paths. Do not work around it by changing the system `PATH`.
+
+## Windows staging reports an unresolved PE import
+
+The Windows runtime stage is built from the actual import graph of `php.exe`
+and the emitted extension DLLs. A dependency that is neither present in the
+reviewed snapshot/LevelDB output nor on the explicit Windows system-DLL list is
+refused. Add or correct the immutable dependency closure; do not copy a DLL
+from the machine or add its directory to `PATH`.
+
+## Windows staging reports a private path or PDB path
+
+The release binaries retained an invocation, repository, profile, temporary,
+or absolute debug-symbol path. Keep the neutral `bedriox-runtime` prefix and
+fix the compiler/linker production flags. Do not delete the inspection or
+rewrite bytes after linking.

@@ -56,6 +56,21 @@ resolved headers and libraries, installs the LevelDB DLL beside `php.exe`, and
 checks the final PE imports. `php_leveldb.dll` must import `leveldb.dll`, while
 `leveldb.dll` must not depend on separate zlib or zstd DLLs.
 
+PHP is configured with the neutral relative prefix and configuration path
+`bedriox-runtime`; invocation-specific install paths are never compiled into
+the executable. The build uses PHP's `nmake snap` target as a tooling output,
+then creates a separate runtime stage from an allowlist. That stage contains
+only `php.exe`, emitted `ext/*.dll` modules, and root DLLs reached by recursively
+inspecting their PE imports. Every non-system import must resolve from the
+snapshot or the reviewed LevelDB output; the staging step never searches the
+ambient `PATH` for a missing library.
+
+Before packaging, every staged PE is inspected with bounded ASCII and UTF-16
+searches for the repository, invocation, user-profile, and temporary roots.
+PE debug headers are also inspected and absolute PDB paths are rejected. Import
+libraries, headers, PDBs, SDK tools, and other development outputs cannot pass
+the runtime-layout allowlist.
+
 Windows ARM64 is experimental. The build must refuse to label it supported
 until PHP, GMP, LevelDB, the PHP extension, and the complete suite execute on a
 native ARM64 system. It is deliberately not selectable in the hosted workflow.

@@ -21,7 +21,9 @@ extracts into paths containing spaces, and verifies the Unix executable mode.
 `tests/windows-build-contract-test.php` locks the Windows x86-64 runner mapping,
 the exact downloads cache, the split platform entry points, and the
 environment-only PHP SDK task contract so positional argument forwarding cannot
-silently regress.
+silently regress. It also locks the neutral PHP prefix, `nmake snap` boundary,
+PE-import closure, absence of native-library `PATH` fallback, runtime-only
+Windows allowlist, and bounded private-path and debug/PDB inspection.
 `tests/unix-build-contract-test.php` locks the neutral staged prefix, explicit
 release flags, prefix maps, disabled runtime search paths, runtime-only file
 allowlist, and native binary inspection tools used by Linux and macOS builds.

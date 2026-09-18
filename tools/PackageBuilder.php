@@ -128,6 +128,50 @@ final class PackageBuilder
         }
     }
 
+    public static function assertNativeRuntimeLayout(string $source, string $target): void
+    {
+        self::assertTarget($target);
+        if (!str_starts_with($target, 'windows-')) {
+            return;
+        }
+        $sourceReal = realpath($source);
+        if ($sourceReal === false || !is_dir($sourceReal) || is_link($source)) {
+            throw new RuntimeException('Windows runtime stage is unavailable or unsafe.');
+        }
+        $files = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($sourceReal, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+        );
+        foreach ($iterator as $entry) {
+            $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($sourceReal) + 1));
+            self::assertRelativePath($relative);
+            if ($entry->isLink()) {
+                throw new RuntimeException('Windows runtime stage contains a link.');
+            }
+            if ($entry->isDir()) {
+                if ($relative !== 'ext') {
+                    throw new RuntimeException('Windows runtime stage contains an undeclared directory: ' . $relative);
+                }
+                continue;
+            }
+            if (!$entry->isFile()) {
+                throw new RuntimeException('Windows runtime stage contains an unsupported entry: ' . $relative);
+            }
+            if (
+                $relative !== 'php.exe'
+                && preg_match('/^[A-Za-z0-9._+-]+\.dll$/iD', $relative) !== 1
+                && preg_match('#^ext/[A-Za-z0-9_+-]+\.dll$#iD', $relative) !== 1
+            ) {
+                throw new RuntimeException('Windows runtime stage contains a development or undeclared file: ' . $relative);
+            }
+            $files[] = strtolower($relative);
+        }
+        if (!in_array('php.exe', $files, true) || !in_array('ext/php_leveldb.dll', $files, true) || !in_array('leveldb.dll', $files, true)) {
+            throw new RuntimeException('Windows runtime stage is missing php.exe or the LevelDB shared-library closure.');
+        }
+    }
+
     public static function renderIni(string $template, string $packageRoot): string
     {
         if (!str_contains($template, '@BEDRIOX_DYNAMIC_EXTENSIONS@')) {

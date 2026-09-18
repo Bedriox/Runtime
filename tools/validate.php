@@ -25,6 +25,7 @@ $requiredFiles = [
     'scripts/unix/extract-sources.sh', 'scripts/unix/preflight.sh',
     'scripts/windows/build.ps1', 'scripts/windows/native-build.cmd',
     'scripts/windows/native-build.ps1', 'scripts/windows/RuntimeBuild.psm1',
+    'scripts/windows/stage-runtime.ps1',
     'tests/manifest-cli-test.php', 'tests/manifest-test.php',
     'tests/package-archive-test.php', 'tests/package-test.php', 'tests/qualify.php',
     'tests/unix-build-contract-test.php',

@@ -85,6 +85,7 @@ try {
         }
     }
 
+    PackageBuilder::assertNativeRuntimeLayout($sourceRoot, $target);
     PackageBuilder::copyTree($sourceRoot, $packageRoot);
     $executable = $packageRoot . DIRECTORY_SEPARATOR . (str_starts_with($target, 'windows-') ? 'php.exe' : 'php');
     if (!is_file($executable)) {

@@ -4,6 +4,8 @@
 
 - Established the Runtime build, dependency, packaging, qualification, and
   release foundation for PHP 8.4.
+- Hardened Windows packaging with a neutral compiled PHP prefix, an
+  import-closed runtime allowlist, and bounded private/debug path inspection.
 - Hardened TLS qualification to exercise cURL and OpenSSL through the packaged
   default CA configuration and distinguish verification rejection from network
   reachability failures.
