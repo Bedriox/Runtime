@@ -29,10 +29,11 @@ drop-in replacement for the required raw-zlib and zstd-compatible fork.
 
 ## Unix PHP fails to link libzip Zstandard symbols
 
-The Unix build deliberately supplies `-lzstd -lz` through Autoconf's `LIBS`
-input and verifies that they remain at the end of PHP's generated link plan.
-Static archive order is significant on one-pass Unix linkers: moving these
-libraries before `libzip.a` leaves its `ZSTD_*` references unresolved.
+The Unix build deliberately supplies libzip's complete static `pkg-config`
+closure through the supported `LIBZIP_LIBS` override and verifies that zstd
+remains after libzip in PHP's generated link plan. Static archive order is
+significant on one-pass Unix linkers: moving zstd before `libzip.a` leaves its
+`ZSTD_*` references unresolved.
 
 ## A package works only in its build directory
 
