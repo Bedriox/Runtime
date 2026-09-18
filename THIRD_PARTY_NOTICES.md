@@ -41,7 +41,7 @@ Versions and immutable digests are authoritative in
 | CMake | BSD-3-Clause | `licenses/cmake-BSD-3-Clause.txt` |
 | df-mc/goleveldb fixture producer | BSD-2-Clause | `licenses/df-mc-goleveldb-BSD-2-Clause.txt` |
 | Google LevelDB fixture producer | BSD-3-Clause | `licenses/google-leveldb-BSD-3-Clause.txt` |
-| Microsoft Visual C++ VC143 Runtime DLLs | Microsoft Visual Studio 2022 Software License Terms — Distributable Code | `licenses/microsoft-vc143-runtime-NOTICE.txt` |
+| Microsoft Visual C++ VC143 Runtime DLLs (Windows packages only) | Microsoft Visual Studio 2022 Software License Terms — Distributable Code | Notice included in Windows packages |
 
 The Windows x86-64 PHP SDK packages above form the reviewed native dependency
 closure for the configured PHP 8.4 build. Their exact archive URLs, sizes, and

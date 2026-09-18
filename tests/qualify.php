@@ -173,7 +173,7 @@ function validatePackage(string $root): void
     foreach (['schemaVersion', 'target', 'architecture', 'phpVersion', 'threadSafe', 'compiler', 'linker', 'buildPolicy', 'sources', 'files'] as $field) {
         ensure(array_key_exists($field, $manifest), 'Runtime manifest is missing ' . $field . '.');
     }
-    ensure($manifest['schemaVersion'] === 1, 'Runtime manifest schema is unsupported.');
+    ensure($manifest['schemaVersion'] === 2, 'Runtime manifest schema is unsupported.');
     ensure(is_string($manifest['target']) && in_array($manifest['target'], [
         'windows-x86_64', 'linux-x86_64', 'linux-arm64', 'macos-x86_64', 'macos-arm64', 'windows-arm64',
     ], true), 'Runtime manifest target is invalid.');

@@ -11,8 +11,8 @@ notices. See THIRD_PARTY_NOTICES.md and the licenses directory.
 
 Windows packages include unmodified Microsoft Visual C++ VC143 Runtime DLLs.
 Those files are licensed separately by Microsoft and are not covered by
-Bedriox's GPL-3.0-only license. See
-licenses/microsoft-vc143-runtime-NOTICE.txt.
+Bedriox's GPL-3.0-only license. Windows packages carry the applicable
+Microsoft notice in their licenses directory.
 
 Independent LevelDB compatibility fixtures were produced with df-mc/goleveldb
 and Google LevelDB. Their pinned sources, modifications, and checksums are

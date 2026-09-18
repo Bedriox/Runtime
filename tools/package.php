@@ -197,7 +197,7 @@ try {
         throw new RuntimeException('Packaged PHP returned an invalid identity.');
     }
     $runtimeManifest = [
-        'schemaVersion' => 1,
+        'schemaVersion' => 2,
         'target' => $target,
         'architecture' => $identity[1],
         'phpVersion' => $identity[0],
