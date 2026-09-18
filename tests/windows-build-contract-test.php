@@ -60,6 +60,8 @@ windowsBuildEnsure(
     preg_match('/`"\$starter`" -t `"\$driver`"/', $orchestrator) === 1,
     'The PHP SDK task must receive only the driver path; task arguments are not forwarded reliably.',
 );
+windowsBuildEnsure(str_contains($orchestrator, 'cmd.exe /d /s /c "`"$starter`" -t `"$driver`"" | Out-Host'), 'Native compiler output can contaminate the typed build result.');
+windowsBuildEnsure(str_contains($orchestrator, '--format=zip | Out-Host'), 'Package qualification output can contaminate the typed build result.');
 windowsBuildEnsure(
     preg_match('/%~[1-9]/', $driver) !== 1,
     'The native driver still relies on positional arguments from phpsdk-starter.',

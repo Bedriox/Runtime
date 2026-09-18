@@ -17,6 +17,20 @@ final class PackageBuilder
         }
     }
 
+    /** @return array<string, string> */
+    public static function noticeFiles(string $target): array
+    {
+        self::assertTarget($target);
+        $files = [
+            'NOTICE' => 'NOTICE',
+            'THIRD_PARTY_NOTICES.md' => 'THIRD_PARTY_NOTICES.md',
+        ];
+        if (str_starts_with($target, 'windows-')) {
+            $files['licenses/microsoft-vc143-runtime-NOTICE.txt'] = 'licenses/microsoft-vc143-runtime-NOTICE.txt';
+        }
+        return $files;
+    }
+
     public static function assertAbsolutePath(string $path, string $description): string
     {
         if ($path === '' || str_contains($path, "\0")) {

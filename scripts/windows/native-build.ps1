@@ -198,7 +198,7 @@ foreach ($name in $nativeEnvironment.Keys) {
 }
 $nativeExitCode = -1
 try {
-    & cmd.exe /d /s /c "`"$starter`" -t `"$driver`""
+    & cmd.exe /d /s /c "`"$starter`" -t `"$driver`"" | Out-Host
     $nativeExitCode = $LASTEXITCODE
 } finally {
     foreach ($name in $nativeEnvironment.Keys) {
@@ -239,7 +239,7 @@ try {
         --compiler=$compilerIdentity `
         --linker=$linkerIdentity `
         --source-ids=$sourceIds `
-        --format=zip
+        --format=zip | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Runtime packaging and qualification failed with exit code $LASTEXITCODE." }
 } finally {
     Remove-Item Env:\BEDRIOX_RUNTIME_ROOT -ErrorAction SilentlyContinue

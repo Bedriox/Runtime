@@ -120,11 +120,7 @@ try {
             throw new RuntimeException('Could not create package ' . $directory . ' directory.');
         }
     }
-    foreach ([
-        'NOTICE' => 'NOTICE',
-        'THIRD_PARTY_NOTICES.md' => 'THIRD_PARTY_NOTICES.md',
-        'licenses/microsoft-vc143-runtime-NOTICE.txt' => 'licenses/microsoft-vc143-runtime-NOTICE.txt',
-    ] as $sourceRelative => $destinationRelative) {
+    foreach (PackageBuilder::noticeFiles($target) as $sourceRelative => $destinationRelative) {
         $source = $repositoryRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $sourceRelative);
         $destination = $packageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $destinationRelative);
         if (!is_file($source) || !copy($source, $destination)) {
@@ -192,12 +188,12 @@ try {
         throw new RuntimeException('Could not write packaged php.ini.');
     }
 
-    [$infoStatus, $infoOutput, $infoError] = run([$executable, '-n', '-r', 'echo json_encode([PHP_VERSION, php_uname("m")], JSON_THROW_ON_ERROR);']);
+    [$infoStatus, $infoOutput, $infoError] = run([$executable, '-n', '-r', 'echo json_encode([PHP_VERSION, php_uname("m"), (bool) PHP_ZTS], JSON_THROW_ON_ERROR);']);
     if ($infoStatus !== 0) {
         throw new RuntimeException('Packaged PHP could not report its identity: ' . trim($infoOutput . ' ' . $infoError));
     }
     $identity = json_decode($infoOutput, true, 8, JSON_THROW_ON_ERROR);
-    if (!is_array($identity) || count($identity) !== 2 || !is_string($identity[0]) || !is_string($identity[1])) {
+    if (!is_array($identity) || count($identity) !== 3 || !is_string($identity[0]) || !is_string($identity[1]) || !is_bool($identity[2])) {
         throw new RuntimeException('Packaged PHP returned an invalid identity.');
     }
     $runtimeManifest = [
@@ -205,6 +201,7 @@ try {
         'target' => $target,
         'architecture' => $identity[1],
         'phpVersion' => $identity[0],
+        'threadSafe' => $identity[2],
         'compiler' => PackageBuilder::assertIdentity($options['compiler'], 'Compiler'),
         'linker' => PackageBuilder::assertIdentity($options['linker'], 'Linker'),
         'buildPolicy' => str_starts_with($target, 'windows-')

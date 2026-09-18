@@ -161,7 +161,6 @@ function validatePackage(string $root): void
         'runtime-manifest.json',
         'NOTICE',
         'THIRD_PARTY_NOTICES.md',
-        'licenses/microsoft-vc143-runtime-NOTICE.txt',
     ] as $relative) {
         ensure(is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative)), $relative . ' is missing.');
     }
@@ -171,7 +170,7 @@ function validatePackage(string $root): void
     ensure(is_array($licenses) && count($licenses) >= 5, 'Packaged dependency licenses are incomplete.');
 
     $manifest = readJsonObject($root . DIRECTORY_SEPARATOR . 'runtime-manifest.json');
-    foreach (['schemaVersion', 'target', 'architecture', 'phpVersion', 'compiler', 'linker', 'buildPolicy', 'sources', 'files'] as $field) {
+    foreach (['schemaVersion', 'target', 'architecture', 'phpVersion', 'threadSafe', 'compiler', 'linker', 'buildPolicy', 'sources', 'files'] as $field) {
         ensure(array_key_exists($field, $manifest), 'Runtime manifest is missing ' . $field . '.');
     }
     ensure($manifest['schemaVersion'] === 1, 'Runtime manifest schema is unsupported.');
@@ -179,9 +178,17 @@ function validatePackage(string $root): void
         'windows-x86_64', 'linux-x86_64', 'linux-arm64', 'macos-x86_64', 'macos-arm64', 'windows-arm64',
     ], true), 'Runtime manifest target is invalid.');
     ensure($manifest['phpVersion'] === PHP_VERSION, 'Runtime manifest PHP version does not match the executable.');
+    ensure(is_bool($manifest['threadSafe']) && $manifest['threadSafe'] === (bool) PHP_ZTS, 'Runtime manifest thread-safety choice does not match the executable.');
     $target = $manifest['target'];
+    $microsoftNotice = $root . DIRECTORY_SEPARATOR . 'licenses' . DIRECTORY_SEPARATOR . 'microsoft-vc143-runtime-NOTICE.txt';
+    if (str_starts_with($target, 'windows-')) {
+        ensure(is_file($microsoftNotice), 'The Microsoft VC143 runtime notice is missing from a Windows package.');
+    } else {
+        ensure(!file_exists($microsoftNotice), 'A non-Windows package contains the Microsoft VC143 runtime notice.');
+    }
     $expectedFamily = str_starts_with($target, 'windows-') ? 'Windows' : (str_starts_with($target, 'macos-') ? 'Darwin' : 'Linux');
     ensure(PHP_OS_FAMILY === $expectedFamily, 'Runtime manifest target operating system does not match the executable.');
+    ensure($manifest['threadSafe'] === str_starts_with($target, 'windows-'), 'Runtime manifest thread-safety choice does not match the target contract.');
     $machine = strtolower(php_uname('m'));
     if (str_ends_with($target, '-x86_64')) {
         ensure(in_array($machine, ['amd64', 'x86_64'], true), 'Runtime manifest x86-64 target does not match architecture ' . $machine . '.');
@@ -197,6 +204,11 @@ function validatePackage(string $root): void
     ensure(($manifest['sources']['php']['version'] ?? null) === EXPECTED_PHP_VERSION, 'Runtime manifest PHP source version is not the qualified version.');
 
     ensure(is_array($manifest['files']) && $manifest['files'] !== [] && !array_is_list($manifest['files']), 'Runtime manifest has no package file inventory.');
+    if (str_starts_with($target, 'windows-')) {
+        ensure(isset($manifest['files']['licenses/microsoft-vc143-runtime-NOTICE.txt']), 'The Windows package inventory omits the Microsoft VC143 runtime notice.');
+    } else {
+        ensure(!isset($manifest['files']['licenses/microsoft-vc143-runtime-NOTICE.txt']), 'A non-Windows package inventories the Microsoft VC143 runtime notice.');
+    }
     $declaredPaths = array_keys($manifest['files']);
     $sortedDeclaredPaths = $declaredPaths;
     sort($sortedDeclaredPaths, SORT_STRING);

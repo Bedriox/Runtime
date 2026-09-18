@@ -12,6 +12,13 @@ function packageTestEnsure(bool $condition, string $message): void
 }
 
 $root = dirname(__DIR__);
+foreach (['windows-x86_64', 'windows-arm64'] as $target) {
+    packageTestEnsure(isset(PackageBuilder::noticeFiles($target)['licenses/microsoft-vc143-runtime-NOTICE.txt']), 'Windows notice closure omits the Microsoft VC143 runtime notice.');
+}
+foreach (['linux-x86_64', 'linux-arm64', 'macos-x86_64', 'macos-arm64'] as $target) {
+    $notices = PackageBuilder::noticeFiles($target);
+    packageTestEnsure(array_keys($notices) === ['NOTICE', 'THIRD_PARTY_NOTICES.md'], 'Unix notice closure is not exact.');
+}
 $testParent = $root . DIRECTORY_SEPARATOR . 'build' . DIRECTORY_SEPARATOR . 'package-test-' . getmypid();
 if (!mkdir($testParent, 0755, true)) {
     throw new RuntimeException('Could not create package test root.');
