@@ -51,8 +51,10 @@ make_install_autoconf() {
 
 make_install_cmake() {
 	id=$1
-	shift
-	source=$(source_path "$id")
+	source_subdirectory=$2
+	shift 2
+	source="$(source_path "$id")/$source_subdirectory"
+	[ -f "$source/CMakeLists.txt" ] || runtime_die "CMake source is missing for $id: $source_subdirectory"
 	work="$build_root/build-$id"
 	cmake -S "$source" -B "$work" \
 		-DCMAKE_BUILD_TYPE=Release \
@@ -96,12 +98,12 @@ make_install_autoconf sqlite
 make_install_autoconf libxml2 --without-python --without-lzma
 make_install_autoconf oniguruma
 make_install_autoconf libsodium
-make_install_cmake zstd -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DZSTD_BUILD_SHARED=OFF
-make_install_cmake libzip \
+make_install_cmake zstd build/cmake -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DZSTD_BUILD_SHARED=OFF
+make_install_cmake libzip . \
 	-DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF \
 	-DENABLE_BZIP2=OFF -DENABLE_LZMA=OFF -DENABLE_ZSTD=ON \
 	-DOPENSSL_ROOT_DIR="$prefix" -DCMAKE_DISABLE_FIND_PACKAGE_BZip2=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LibLZMA=TRUE
-make_install_cmake leveldb \
+make_install_cmake leveldb . \
 	-DLEVELDB_BUILD_TESTS=OFF -DLEVELDB_BUILD_BENCHMARKS=OFF -DLEVELDB_INSTALL=ON \
 	-DLEVELDB_SNAPPY=OFF -DLEVELDB_TCMALLOC=OFF -DLEVELDB_ZLIB=ON -DLEVELDB_ZSTD=ON
 grep -E '^ZLIB_LIBRARY[^=]*=.+' "$build_root/build-leveldb/CMakeCache.txt" | grep -qv 'NOTFOUND' || runtime_die "LevelDB did not resolve the pinned zlib build"
