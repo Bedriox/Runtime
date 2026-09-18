@@ -24,6 +24,9 @@ foreach ([
     'CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" ./configure',
     '-DCMAKE_C_FLAGS="$runtime_cflags"',
     '-DCMAKE_CXX_FLAGS="$runtime_cflags"',
+    'openssl_cflags="-O2 -g0 -fPIC"',
+    'CFLAGS="$openssl_cflags" ./Configure',
+    'make_install_autoconf libxml2 --sysconfdir="$runtime_prefix/etc"',
     '--openssldir="$runtime_prefix/ssl"',
     'make install_sw DESTDIR="$openssl_stage"',
     'cp -R -p -- "$openssl_install_root/." "$prefix/"',
@@ -36,11 +39,26 @@ foreach ([
     'readelf -d "$binary" > "$dynamic_report"',
     "grep -E '(RPATH|RUNPATH)'",
     "grep -q 'LC_RPATH'",
+    'for private_root_kind in build source repository download',
     'grep -F "$private_root" "$strings_report"',
+    'runtime binary contains a private $private_root_kind path',
     '--source-root="$runtime_stage"',
 ] as $required) {
     unixBuildEnsure(str_contains($compiler, $required), 'Unix native build is missing hardening contract: ' . $required);
 }
+
+$opensslBlockStart = strpos($compiler, 'openssl_source=$(source_path openssl)');
+$opensslBlockEnd = strpos($compiler, 'openssl_install_root=');
+unixBuildEnsure($opensslBlockStart !== false && $opensslBlockEnd !== false && $opensslBlockEnd > $opensslBlockStart, 'OpenSSL build block could not be isolated.');
+$opensslBuildBlock = substr($compiler, $opensslBlockStart, $opensslBlockEnd - $opensslBlockStart);
+unixBuildEnsure(
+    !str_contains($opensslBuildBlock, 'CFLAGS="$runtime_cflags" ./Configure'),
+    'OpenSSL build information still receives private prefix-map operands.',
+);
+unixBuildEnsure(
+    !str_contains($compiler, 'make_install_autoconf libxml2 --without-python'),
+    'libxml2 still receives the private dependency prefix as its default sysconfdir.',
+);
 
 foreach (['phpize', 'php-config', 'phar.phar'] as $developmentFile) {
     unixBuildEnsure(

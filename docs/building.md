@@ -71,6 +71,13 @@ PE debug headers are also inspected and absolute PDB paths are rejected. Import
 libraries, headers, PDBs, SDK tools, and other development outputs cannot pass
 the runtime-layout allowlist.
 
+Unix builds use a neutral libxml2 catalog location and neutral OpenSSL release
+flags because both projects expose configure-time values as runtime strings.
+Compiler prefix maps remain mandatory for sources that need them, but their
+private operands are not passed into OpenSSL's public build-information string.
+The finished executable and every extension are still scanned for all build,
+source, download, and repository roots before packaging.
+
 Windows ARM64 is experimental. The build must refuse to label it supported
 until PHP, GMP, LevelDB, the PHP extension, and the complete suite execute on a
 native ARM64 system. It is deliberately not selectable in the hosted workflow.

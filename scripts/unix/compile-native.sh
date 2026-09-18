@@ -87,6 +87,7 @@ make_install_autoconf gmp --enable-cxx
 openssl_source=$(source_path openssl)
 openssl_work="$build_root/build-openssl"
 openssl_stage="$build_root/install-openssl"
+openssl_cflags="-O2 -g0 -fPIC"
 cp -R -p -- "$openssl_source" "$openssl_work"
 case "$target" in
 	linux-x86_64) openssl_target=linux-x86_64 ;;
@@ -96,7 +97,10 @@ case "$target" in
 esac
 (
 	cd "$openssl_work"
-	CFLAGS="$runtime_cflags" ./Configure "$openssl_target" --prefix="$runtime_prefix" \
+	# OpenSSL exposes its configured compiler flags through OPENSSL_VERSION(1).
+	# Its in-tree build uses relative source paths, so private prefix-map operands
+	# are unnecessary here and must not become runtime build information.
+	CFLAGS="$openssl_cflags" ./Configure "$openssl_target" --prefix="$runtime_prefix" \
 		--openssldir="$runtime_prefix/ssl" --libdir=lib no-shared no-tests
 	make -j"$jobs"
 	make install_sw DESTDIR="$openssl_stage"
@@ -122,7 +126,7 @@ if ($count < 1 || file_put_contents($argv[1], $rewritten, LOCK_EX) === false) {
 done
 
 make_install_autoconf sqlite
-make_install_autoconf libxml2 --without-python --without-lzma
+make_install_autoconf libxml2 --sysconfdir="$runtime_prefix/etc" --without-python --without-lzma
 make_install_autoconf oniguruma
 make_install_autoconf libsodium
 make_install_cmake zstd build/cmake -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DZSTD_BUILD_SHARED=OFF
@@ -265,9 +269,15 @@ for binary in "$runtime_stage/php" "$runtime_stage"/ext/*; do
 			xcrun strings "$binary" > "$strings_report" || runtime_die "could not inspect runtime binary strings: $binary_name"
 			;;
 	esac
-	for private_root in "$build_root" "$source_root" "$repository_root" "$download_root"; do
+	for private_root_kind in build source repository download; do
+		case "$private_root_kind" in
+			build) private_root=$build_root ;;
+			source) private_root=$source_root ;;
+			repository) private_root=$repository_root ;;
+			download) private_root=$download_root ;;
+		esac
 		if grep -F "$private_root" "$strings_report" >/dev/null; then
-			runtime_die "runtime binary contains a private build path: $binary_name"
+			runtime_die "runtime binary contains a private $private_root_kind path: $binary_name"
 		fi
 	done
 done

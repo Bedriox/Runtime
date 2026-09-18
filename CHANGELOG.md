@@ -28,3 +28,5 @@
 - Added independently generated LevelDB fixtures for uncompressed,
   raw-DEFLATE, and zstd databases, with deterministic provenance, strict SST
   inspection, and packaged-runtime qualification before and after relocation.
+- Kept OpenSSL build metadata and libxml2's compiled catalog location free of
+  private invocation paths while preserving strict final binary inspection.
