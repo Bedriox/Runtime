@@ -140,6 +140,8 @@ isolated prefix because transitive pkg-config metadata may already contain
 expanded build directories.
 GNU libiconv is built from the reviewed source manifest for every Unix target,
 so PHP does not depend on SDK-only headers or an ambient Homebrew library.
+libxml2 is compiled against that same isolated header and library prefix to
+keep its iconv ABI consistent with PHP's final static link.
 
 ## Output roots
 

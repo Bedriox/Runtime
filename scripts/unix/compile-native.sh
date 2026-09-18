@@ -127,7 +127,11 @@ if ($count < 1 || file_put_contents($argv[1], $rewritten, LOCK_EX) === false) {
 done
 
 make_install_autoconf sqlite
-make_install_autoconf libxml2 --sysconfdir="$runtime_prefix/etc" --without-python --without-lzma
+(
+	export CPPFLAGS="-I$prefix/include"
+	export LDFLAGS="-L$prefix/lib"
+	make_install_autoconf libxml2 --sysconfdir="$runtime_prefix/etc" --without-python --without-lzma
+)
 make_install_autoconf oniguruma
 make_install_autoconf libsodium
 make_install_cmake zstd build/cmake -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DZSTD_BUILD_SHARED=OFF

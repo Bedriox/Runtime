@@ -33,6 +33,8 @@ foreach ([
     'openssl_cflags="-O2 -g0 -fPIC"',
     'CFLAGS="$openssl_cflags" ./Configure',
     'make_install_autoconf libxml2 --sysconfdir="$runtime_prefix/etc"',
+    'export CPPFLAGS="-I$prefix/include"',
+    'export LDFLAGS="-L$prefix/lib"',
     '--openssldir="$runtime_prefix/ssl"',
     'make install_sw DESTDIR="$openssl_stage"',
     'cp -R -p -- "$openssl_install_root/." "$prefix/"',
