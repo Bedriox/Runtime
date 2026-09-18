@@ -57,6 +57,10 @@ if not exist "%PHP_BUILD%\include\sodium.h" exit /b 67
 if not exist "%PHP_BUILD%\lib\libsodium_a.lib" exit /b 68
 if not exist "%PHP_BUILD%\include\libxml2\libxml\parser.h" exit /b 69
 if not exist "%PHP_BUILD%\lib\libxml2_a_dll.lib" exit /b 70
+if not exist "%PHP_BUILD%\include\iconv.h" exit /b 77
+set "ICONV_LIBRARY="
+for %%I in (libiconv_a.lib libiconv.lib iconv_a.lib iconv.lib) do if not defined ICONV_LIBRARY if exist "%PHP_BUILD%\lib\%%I" set "ICONV_LIBRARY=%PHP_BUILD%\lib\%%I"
+if not defined ICONV_LIBRARY exit /b 78
 if not exist "%PHP_BUILD%\include\sqlite3.h" exit /b 71
 if not exist "%PHP_BUILD%\lib\libsqlite3_a.lib" exit /b 72
 if not exist "%PHP_BUILD%\include\mpir\gmp.h" exit /b 73

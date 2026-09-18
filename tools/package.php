@@ -27,6 +27,27 @@ function run(array $command, ?array $environment = null): array
     return [proc_close($process), $stdout === false ? '' : $stdout, $stderr === false ? '' : $stderr];
 }
 
+/** @return array<string, string> */
+function qualificationEnvironment(string $runtimeRoot): array
+{
+    $environment = getenv();
+    $environment = is_array($environment) ? $environment : [];
+    $blocked = [
+        'CURL_CA_BUNDLE',
+        'OPENSSL_CONF',
+        'OPENSSL_MODULES',
+        'SSL_CERT_DIR',
+        'SSL_CERT_FILE',
+    ];
+    foreach (array_keys($environment) as $name) {
+        if (in_array(strtoupper((string) $name), $blocked, true)) {
+            unset($environment[$name]);
+        }
+    }
+    $environment['BEDRIOX_RUNTIME_ROOT'] = $runtimeRoot;
+    return $environment;
+}
+
 $archivePath = null;
 $candidateArchive = null;
 $ownsArchive = false;
@@ -186,11 +207,7 @@ try {
         throw new RuntimeException('Could not write runtime manifest.');
     }
 
-    $environment = getenv();
-    if (!is_array($environment)) {
-        $environment = [];
-    }
-    $environment['BEDRIOX_RUNTIME_ROOT'] = $packageRoot;
+    $environment = qualificationEnvironment($packageRoot);
     [$qualificationStatus, $qualificationOutput, $qualificationError] = run([
         $executable, '-c', $packageRoot . DIRECTORY_SEPARATOR . 'php.ini',
         $repositoryRoot . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'qualify.php',

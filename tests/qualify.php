@@ -7,7 +7,7 @@ require_once dirname(__DIR__) . '/tools/LevelDbTableInspector.php';
 require_once dirname(__DIR__) . '/tools/UstarArchive.php';
 
 const REQUIRED_EXTENSIONS = [
-    'ctype', 'curl', 'dom', 'fileinfo', 'filter', 'gmp', 'hash', 'json', 'libxml',
+    'ctype', 'curl', 'dom', 'fileinfo', 'filter', 'gmp', 'hash', 'iconv', 'json', 'libxml',
     'mbstring', 'openssl', 'pdo', 'pdo_sqlite', 'phar', 'session', 'simplexml',
     'sockets', 'sodium', 'sqlite3', 'tokenizer', 'xml', 'xmlreader', 'xmlwriter',
     'zip', 'zlib',
