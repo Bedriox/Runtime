@@ -223,11 +223,18 @@ done
 	cd "$leveldb_extension_work"
 	"$build_phpize"
 	case "$target" in
-		linux-*) leveldb_dependencies='-lzstd -lz -lstdc++' ;;
-		macos-*) leveldb_dependencies='-lzstd -lz -lc++' ;;
+		linux-*) leveldb_dependencies='-lzstd -lz -lstdc++'; leveldb_cxx_runtime='-lstdc++' ;;
+		macos-*) leveldb_dependencies='-lzstd -lz -lc++'; leveldb_cxx_runtime='-lc++' ;;
 	esac
+	for archive in "$prefix/lib/libleveldb.a" "$prefix/lib/libzstd.a" "$prefix/lib/libz.a"; do
+		[ -f "$archive" ] || runtime_die "PHP LevelDB static dependency is missing: ${archive##*/}"
+	done
+	for dynamic_leveldb in "$prefix/lib/libleveldb.so" "$prefix/lib"/libleveldb.so.* "$prefix/lib/libleveldb.dylib"; do
+		[ ! -e "$dynamic_leveldb" ] || runtime_die "PHP LevelDB dependency prefix contains a shared LevelDB library"
+	done
+	leveldb_link_closure="$prefix/lib/libleveldb.a $prefix/lib/libzstd.a $prefix/lib/libz.a $leveldb_cxx_runtime"
 	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" LEVELDB_SHARED_LIBADD="$leveldb_dependencies" \
-		./configure --disable-rpath --with-php-config="$build_php_config" --with-leveldb="$prefix"
+		./configure --with-php-config="$build_php_config" --with-leveldb="$prefix"
 	leveldb_shared_libadd=$(sed -n 's/^LEVELDB_SHARED_LIBADD = //p' Makefile)
 	case "${leveldb_shared_libadd##*-lleveldb}" in
 		*'-lzstd'*'-lz'*) ;;
@@ -237,8 +244,8 @@ done
 		*'-lstdc++'*|*'-lc++'*) ;;
 		*) runtime_die "PHP LevelDB link plan does not retain its C++ runtime dependency" ;;
 	esac
-	make -j"$jobs"
-	make install
+	make -j"$jobs" LEVELDB_SHARED_LIBADD="$leveldb_link_closure"
+	make install LEVELDB_SHARED_LIBADD="$leveldb_link_closure"
 )
 
 ca_url=$(php "$repository_root/tools/manifest.php" source ca-bundle url)
@@ -273,12 +280,18 @@ for binary in "$runtime_stage/php" "$runtime_stage"/ext/*; do
 			if grep -E '(RPATH|RUNPATH)' "$dynamic_report" >/dev/null; then
 				runtime_die "runtime binary contains an RPATH or RUNPATH: $binary_name"
 			fi
+			if [ "$binary_name" = leveldb.so ] && grep -E 'NEEDED.*\[(libleveldb|libzstd|libz)\.so' "$dynamic_report" >/dev/null; then
+				runtime_die "LevelDB extension retains a dynamic storage dependency"
+			fi
 			strings "$binary" > "$strings_report" || runtime_die "could not inspect runtime binary strings: $binary_name"
 			;;
 		macos-*)
 			xcrun otool -l "$binary" > "$dynamic_report" || runtime_die "could not inspect runtime Mach-O metadata: $binary_name"
 			if grep -q 'LC_RPATH' "$dynamic_report"; then
 				runtime_die "runtime binary contains an LC_RPATH: $binary_name"
+			fi
+			if [ "$binary_name" = leveldb.so ] && xcrun otool -L "$binary" | grep -E '(libleveldb|libzstd|/libz\.)' >/dev/null; then
+				runtime_die "LevelDB extension retains a dynamic storage dependency"
 			fi
 			xcrun strings "$binary" > "$strings_report" || runtime_die "could not inspect runtime binary strings: $binary_name"
 			;;
