@@ -110,10 +110,11 @@ printf '%s\n' \
 	'int main(void) {' \
 	'    mpz_t root, remainder, value;' \
 	'    mpz_inits(root, remainder, value, NULL);' \
-	'    mpz_set_ui(value, 16);' \
-	'    int exact = mpz_rootrem(root, remainder, value, 2);' \
+	'    mpz_set_ui(value, 17);' \
+	'    mpz_rootrem(root, remainder, value, 2);' \
+	'    int valid = mpz_cmp_ui(root, 4) == 0 && mpz_cmp_ui(remainder, 1) == 0;' \
 	'    mpz_clears(root, remainder, value, NULL);' \
-	'    return exact == 1 ? 0 : 1;' \
+	'    return valid ? 0 : 1;' \
 	'}' > "$gmp_probe_source"
 cc $runtime_cflags -I"$prefix/include" "$gmp_probe_source" "$prefix/lib/libgmp.a" -o "$gmp_probe_binary"
 "$gmp_probe_binary" || runtime_die "installed GMP failed its static consumer probe"
