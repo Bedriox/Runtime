@@ -6,6 +6,7 @@
 - PHP is configured through neutral relative dependency paths, preventing private build locations from entering its compiled build metadata.
 - The Unix LevelDB extension removes its configure-generated private RUNPATH while retaining the complete static dependency link closure.
 - Windows native builds avoid PowerShell's reserved pipeline-input variable when handling verified archives and streams.
+- Windows PHP configuration now uses the verified SDK dependency root, fails on missing requested features, and packages only required signed Visual C++ runtime imports from the active VS17 directory.
 
 - Established the Runtime build, dependency, packaging, qualification, and
   release foundation for PHP 8.4.

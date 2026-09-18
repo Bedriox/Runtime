@@ -32,6 +32,7 @@ $variables = [
     'BEDRIOX_NATIVE_STAGE_SCRIPT',
     'BEDRIOX_NATIVE_REPOSITORY_ROOT',
     'BEDRIOX_NATIVE_INVOCATION_ROOT',
+    'BEDRIOX_NATIVE_ARCHITECTURE',
 ];
 foreach ($variables as $variable) {
     windowsBuildEnsure(str_contains($orchestrator, $variable), "PowerShell orchestration does not set $variable.");
@@ -41,6 +42,11 @@ windowsBuildEnsure(
     str_contains($orchestrator, '[Environment]::SetEnvironmentVariable($name, $null, \'Process\')'),
     'Native build environment variables are not cleared after the SDK task.',
 );
+windowsBuildEnsure(str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure is not bound to the verified SDK dependency tree.');
+windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
+windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
+windowsBuildEnsure(str_contains($driver, '/C:"not enabled" /C:"can\'t be enabled"'), 'Windows configure warnings for missing requested features are not fatal.');
+windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
 windowsBuildEnsure(
     preg_match('/phpsdk-vs17-\{0\}\.bat/', $orchestrator) === 1,
     'Windows build does not use the pinned VS17 PHP SDK starter.',

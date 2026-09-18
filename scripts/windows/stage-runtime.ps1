@@ -5,6 +5,8 @@ param(
     [Parameter(Mandatory = $true)][string] $PhpSource,
     [Parameter(Mandatory = $true)][string] $RuntimeStage,
     [Parameter(Mandatory = $true)][string] $LevelDbDll,
+    [Parameter(Mandatory = $true)][string] $VcRuntimeDirectory,
+    [Parameter(Mandatory = $true)][ValidateSet('x64', 'arm64')][string] $Architecture,
     [Parameter(Mandatory = $true)][string] $RepositoryRoot,
     [Parameter(Mandatory = $true)][string] $InvocationRoot,
     [Parameter(Mandatory = $true)][string] $ReportRoot
@@ -73,6 +75,10 @@ $phpRoot = Assert-AbsoluteExistingDirectory $PhpSource 'PHP source root'
 $repoRoot = Assert-AbsoluteExistingDirectory $RepositoryRoot 'Repository root'
 $invocation = Assert-AbsoluteExistingDirectory $InvocationRoot 'Invocation root'
 $report = Assert-AbsoluteExistingDirectory $ReportRoot 'Report root'
+$vcRuntime = Assert-AbsoluteExistingDirectory $VcRuntimeDirectory 'Visual C++ runtime directory'
+if ((Split-Path -Leaf $vcRuntime) -ne 'Microsoft.VC143.CRT' -or (Split-Path -Leaf (Split-Path -Parent $vcRuntime)) -ne $Architecture) {
+    throw "Visual C++ runtime directory does not match the selected $Architecture VC143 closure: $vcRuntime"
+}
 if (-not [System.IO.Path]::IsPathRooted($RuntimeStage) -or (Test-Path -LiteralPath $RuntimeStage)) {
     throw "Runtime stage must be a new absolute path: $RuntimeStage"
 }
@@ -113,6 +119,27 @@ if ($candidates.ContainsKey($levelDbName) -and (Get-FileHash -Algorithm SHA256 $
     throw 'The snapshot and reviewed LevelDB DLL disagree.'
 }
 $candidates[$levelDbName] = $levelDbResolved
+
+$crtDlls = @(Get-ChildItem -LiteralPath $vcRuntime -Filter *.dll -File)
+if ($crtDlls.Count -eq 0 -or $crtDlls.Count -gt 32) {
+    throw 'The Visual C++ runtime DLL closure is outside the reviewed bounds.'
+}
+$crtBytes = [uint64] 0
+foreach ($dll in $crtDlls) {
+    if ($dll.Name -notmatch '^[A-Za-z0-9._+-]+\.dll$') { throw "Unsafe Visual C++ runtime DLL name: $($dll.Name)" }
+    if (($dll.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { throw "Visual C++ runtime DLL is a reparse point: $($dll.Name)" }
+    $crtBytes += [uint64] $dll.Length
+    if ($crtBytes -gt 134217728) { throw 'The Visual C++ runtime DLL closure exceeds 128 MiB.' }
+    $signature = Get-AuthenticodeSignature -LiteralPath $dll.FullName
+    if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or $null -eq $signature.SignerCertificate -or $signature.SignerCertificate.Subject -notmatch 'CN=Microsoft Corporation(?:,|$)') {
+        throw "Visual C++ runtime DLL does not have a valid Microsoft signature: $($dll.Name)"
+    }
+    $key = $dll.Name.ToLowerInvariant()
+    if ($candidates.ContainsKey($key) -and (Get-FileHash -Algorithm SHA256 $candidates[$key]).Hash -ne (Get-FileHash -Algorithm SHA256 $dll.FullName).Hash) {
+        throw "Visual C++ runtime DLL conflicts with the PHP snapshot: $($dll.Name)"
+    }
+    $candidates[$key] = $dll.FullName
+}
 
 $queue = New-Object System.Collections.Generic.Queue[string]
 $queue.Enqueue((Join-Path $RuntimeStage 'php.exe'))

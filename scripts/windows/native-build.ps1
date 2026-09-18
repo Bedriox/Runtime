@@ -186,6 +186,7 @@ $nativeEnvironment = [ordered] @{
     BEDRIOX_NATIVE_STAGE_SCRIPT = $stageScript
     BEDRIOX_NATIVE_REPOSITORY_ROOT = $RepositoryRoot
     BEDRIOX_NATIVE_INVOCATION_ROOT = $InvocationRoot
+    BEDRIOX_NATIVE_ARCHITECTURE = $sdkArch
 }
 foreach ($name in $nativeEnvironment.Keys) {
     if ($null -ne [Environment]::GetEnvironmentVariable($name, 'Process')) {
