@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Sanitized Unix native-build path diagnostics now identify the embedded-path producer without exposing private runner directories.
+- PHP is configured through neutral relative dependency paths, preventing private build locations from entering its compiled build metadata.
 
 - Established the Runtime build, dependency, packaging, qualification, and
   release foundation for PHP 8.4.

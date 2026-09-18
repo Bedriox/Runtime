@@ -155,11 +155,14 @@ php_work="$build_root/build-php"
 cp -R -p -- "$php_source" "$php_work"
 (
 	cd "$php_work"
+	php_dependency_root=../prefix
+	php_pkg_config_path="$php_dependency_root/lib/pkgconfig:$php_dependency_root/share/pkgconfig"
 	# Override libzip's pkg-config result with its complete static link closure.
 	# This keeps compression dependencies after libzip on one-pass Unix linkers.
-	LIBZIP_CFLAGS=$(pkg-config --cflags libzip)
-	LIBZIP_LIBS=$(pkg-config --static --libs libzip)
+	LIBZIP_CFLAGS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --cflags libzip)
+	LIBZIP_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libzip)
 	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" \
+		PKG_CONFIG_PATH="$php_pkg_config_path" CPPFLAGS="-I$php_dependency_root/include" LDFLAGS="-L$php_dependency_root/lib" \
 		LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" \
 		./configure --prefix="$runtime_prefix" --disable-rpath \
 		--with-config-file-path=. \
@@ -170,6 +173,17 @@ cp -R -p -- "$php_source" "$php_work"
 		--with-openssl --with-curl --with-zlib \
 		--with-zip --with-gmp --with-sodium \
 		--with-iconv --with-sqlite3 --with-pdo-sqlite --with-libxml
+	for private_root_kind in build source repository download; do
+		case "$private_root_kind" in
+			build) private_root=$build_root ;;
+			source) private_root=$source_root ;;
+			repository) private_root=$repository_root ;;
+			download) private_root=$download_root ;;
+		esac
+		if grep -F "$private_root" main/build-defs.h >/dev/null; then
+			runtime_die "PHP build definitions contain a private $private_root_kind path"
+		fi
+	done
 	extra_libs=$(sed -n 's/^EXTRA_LIBS = //p' Makefile)
 	case "${extra_libs##*-lzip}" in
 		*'-lzstd'*) ;;
@@ -290,9 +304,9 @@ foreach ($contents as $line) {
         continue;
     }
     foreach ($roots as $index => $root) {
-        $line = str_replace($root, '<private-' . ['build', 'source', 'repository', 'download'][$index] . '-root>', $line);
+        $line = str_replace($root, "<private-" . ["build", "source", "repository", "download"][$index] . "-root>", $line);
     }
-    fwrite(STDERR, 'sanitized private path witness: ' . substr($line, 0, 512) . "\n");
+    fwrite(STDERR, "sanitized private path witness: " . substr($line, 0, 512) . "\n");
     break;
 }
 ' "$strings_report" "$private_root" "$build_root" "$source_root" "$repository_root" "$download_root"
