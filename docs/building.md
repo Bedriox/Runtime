@@ -111,6 +111,11 @@ bison, re2c, and pkg-config. Build natively for the selected target:
 
 Cross-compilation alone cannot qualify a release.
 
+The hosted native workflow installs the keg-only Homebrew `php@8.4` formula as
+its bootstrap interpreter. It verifies the major and minor version before the
+build starts instead of relying on the runner's newer default PHP or the
+generic PHP setup action.
+
 Unix builds compile PHP with a stable `/opt/bedriox-runtime` prefix and install
 through an isolated staging root. Build-only `phpize` and `php-config` copies
 are relocated inside that invocation and are not shipped. The release stage is

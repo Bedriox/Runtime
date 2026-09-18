@@ -12,7 +12,12 @@ function unixBuildEnsure(bool $condition, string $message): void
 $root = dirname(__DIR__);
 $compiler = file_get_contents($root . '/scripts/unix/compile-native.sh');
 $preflight = file_get_contents($root . '/scripts/unix/preflight.sh');
-unixBuildEnsure(is_string($compiler) && is_string($preflight), 'Unix build contract inputs could not be read.');
+$workflow = file_get_contents($root . '/.github/workflows/native-build.yml');
+unixBuildEnsure(is_string($compiler) && is_string($preflight) && is_string($workflow), 'Unix build contract inputs could not be read.');
+unixBuildEnsure(str_contains($workflow, "if: runner.os != 'macOS'\n        uses: shivammathur/setup-php@"), 'macOS still uses the failing generic PHP bootstrap action.');
+unixBuildEnsure(str_contains($workflow, 'brew install php@8.4 autoconf automake bison cmake libtool pkg-config re2c'), 'macOS does not install its PHP 8.4 bootstrap with the native Homebrew toolchain.');
+unixBuildEnsure(str_contains($workflow, 'echo "$(brew --prefix php@8.4)/bin" >> "$GITHUB_PATH"'), 'macOS does not expose the pinned PHP 8.4 bootstrap to later build steps.');
+unixBuildEnsure(str_contains($workflow, 'PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 4'), 'macOS does not verify its PHP 8.4 bootstrap before compilation.');
 
 foreach ([
     'runtime_prefix=/opt/bedriox-runtime',

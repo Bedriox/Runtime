@@ -78,6 +78,7 @@ jobs:
           persist-credentials: false
 
       - name: Use PHP 8.4 for repository tooling
+        if: runner.os != 'macOS'
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # Node.js 24 revision
         with:
           php-version: '8.4'
@@ -96,9 +97,12 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install autoconf automake bison cmake libtool pkg-config re2c
+          brew install php@8.4 autoconf automake bison cmake libtool pkg-config re2c
+          echo "$(brew --prefix php@8.4)/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix php@8.4)/sbin" >> "$GITHUB_PATH"
           echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix libtool)/libexec/gnubin" >> "$GITHUB_PATH"
+          "$(brew --prefix php@8.4)/bin/php" -r 'if (PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 4) { exit(1); }'
 
       - name: Restore verified source cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
