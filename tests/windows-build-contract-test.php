@@ -48,6 +48,7 @@ windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
 windowsBuildEnsure(str_contains($stage, "'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'"), 'Runtime staging does not load the trusted in-box signature module explicitly.');
 windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
+windowsBuildEnsure(str_contains($stage, "'(?:^|,\s*)O=Microsoft Corporation(?:,|$)'"), 'Visual C++ runtime signer validation does not require Microsoft Corporation as the exact organization.');
 windowsBuildEnsure(str_contains($stage, '[System.Security.Cryptography.SHA256]::Create()'), 'Runtime staging does not use its shell-independent SHA-256 implementation.');
 windowsBuildEnsure(!str_contains($stage, 'Get-FileHash'), 'Runtime staging depends on an auto-loaded hashing cmdlet.');
 windowsBuildEnsure(

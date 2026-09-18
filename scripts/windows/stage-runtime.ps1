@@ -151,7 +151,7 @@ foreach ($dll in $crtDlls) {
     $crtBytes += [uint64] $dll.Length
     if ($crtBytes -gt 134217728) { throw 'The Visual C++ runtime DLL closure exceeds 128 MiB.' }
     $signature = Get-AuthenticodeSignature -LiteralPath $dll.FullName
-    if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or $null -eq $signature.SignerCertificate -or $signature.SignerCertificate.Subject -notmatch 'CN=Microsoft Corporation(?:,|$)') {
+    if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or $null -eq $signature.SignerCertificate -or $signature.SignerCertificate.Subject -notmatch '(?:^|,\s*)O=Microsoft Corporation(?:,|$)') {
         throw "Visual C++ runtime DLL does not have a valid Microsoft signature: $($dll.Name)"
     }
     $key = $dll.Name.ToLowerInvariant()
