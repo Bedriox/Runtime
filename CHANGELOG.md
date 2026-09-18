@@ -25,3 +25,6 @@
   directories while keeping build-only discovery inside the isolated stage.
 - Kept the private Unix dependency prefix out of PHP's recorded configure
   command while retaining isolated compiler and pkg-config discovery.
+- Added independently generated LevelDB fixtures for uncompressed,
+  raw-DEFLATE, and zstd databases, with deterministic provenance, strict SST
+  inspection, and packaged-runtime qualification before and after relocation.

@@ -109,6 +109,12 @@ Bedrock Edition worlds. Their licenses and required notices are retained in
 distributed packages. Bedriox is an independent project and is not affiliated
 with PMMP.
 
+LevelDB compatibility is qualified with independent databases produced from
+pinned df-mc/goleveldb and Google LevelDB commits. The fixture sources,
+generator inputs, licenses, archive hashes, and reproducible build commands are
+recorded in `fixtures/metadata.json`. These fixtures contain only the Runtime
+test corpus and no Minecraft assets or user world data.
+
 Minecraft, Bedrock Edition, Mojang Studios, and Microsoft are trademarks of
 their respective owners. Bedriox is independent and is not affiliated with or
 endorsed by Mojang Studios or Microsoft.

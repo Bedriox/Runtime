@@ -1,0 +1,13 @@
+diff --git a/include/leveldb/options.h b/include/leveldb/options.h
+index 8e3ce23..31e09ae 100644
+--- a/include/leveldb/options.h
++++ b/include/leveldb/options.h
+@@ -27,7 +27,7 @@ enum CompressionType {
+   // part of the persistent format on disk.
+   kNoCompression = 0x0,
+   kSnappyCompression = 0x1,
+-  kZstdCompression = 0x2,
++  kZstdCompression = 0x3,
+ };
+ 
+ // Options to control the behavior of a database (passed to DB::Open)

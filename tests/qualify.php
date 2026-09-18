@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/tools/LevelDbFixtureCorpus.php';
+require_once dirname(__DIR__) . '/tools/LevelDbTableInspector.php';
+require_once dirname(__DIR__) . '/tools/UstarArchive.php';
+
 const REQUIRED_EXTENSIONS = [
     'ctype', 'curl', 'dom', 'fileinfo', 'filter', 'gmp', 'hash', 'json', 'libxml',
     'mbstring', 'openssl', 'pdo', 'pdo_sqlite', 'phar', 'session', 'simplexml',
@@ -259,6 +263,8 @@ function qualifyLevelDb(string $temporaryRoot): void
     foreach (['LEVELDB_ZLIB_RAW_COMPRESSION', 'LEVELDB_ZSTD_COMPRESSION'] as $constant) {
         ensure(defined($constant), 'Bedrock compression constant is unavailable: ' . $constant);
     }
+    ensure(constant('LEVELDB_ZLIB_RAW_COMPRESSION') === 4, 'Raw-DEFLATE compression constant is not Bedrock type 4.');
+    ensure(constant('LEVELDB_ZSTD_COMPRESSION') === 3, 'Zstandard compression constant is not Bedrock type 3.');
     $path = $temporaryRoot . DIRECTORY_SEPARATOR . 'leveldb';
     $database = new LevelDB($path, ['create_if_missing' => true]);
     $database->put("plain\0key", "plain\0value");
@@ -302,6 +308,94 @@ function qualifyLevelDb(string $temporaryRoot): void
         $database = new LevelDB($compressedPath, ['create_if_missing' => false]);
         ensure($database->get('compressed') === $value, 'LevelDB ' . $name . ' value did not survive reopen.');
         unset($database);
+        gc_collect_cycles();
+    }
+}
+
+function qualifyIndependentLevelDbFixtures(string $temporaryRoot): void
+{
+    $repositoryRoot = dirname(__DIR__);
+    $fixtureRoot = $repositoryRoot . DIRECTORY_SEPARATOR . 'fixtures';
+    $metadata = readJsonObject($fixtureRoot . DIRECTORY_SEPARATOR . 'metadata.json');
+    ensure(array_keys($metadata) === ['schemaVersion', 'corpus', 'sources', 'generators', 'fixtures'], 'LevelDB fixture metadata has missing or unknown fields.');
+    ensure($metadata['schemaVersion'] === 2, 'LevelDB fixture metadata schema is unsupported.');
+
+    $corpus = $fixtureRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $metadata['corpus']['path']);
+    ensure(is_file($corpus), 'LevelDB fixture corpus is missing.');
+    ensure(filesize($corpus) === $metadata['corpus']['bytes'], 'LevelDB fixture corpus byte count differs from metadata.');
+    ensure(hash_file('sha256', $corpus) === $metadata['corpus']['sha256'], 'LevelDB fixture corpus digest differs from metadata.');
+    $records = LevelDbFixtureCorpus::read($corpus);
+    ensure(count($records) === $metadata['corpus']['entries'], 'LevelDB fixture corpus entry count differs from metadata.');
+
+    $expected = [
+        'none' => [
+            'path' => 'data/leveldb-none-v1.tar',
+            'bytes' => 120832,
+            'sha256' => 'bfd643a66d952d2c43b1fcfdd5d843b9df3188d55389eb242424f17fce19ebe2',
+            'types' => [0],
+        ],
+        'raw-zlib' => [
+            'path' => 'data/leveldb-raw-zlib-v1.tar',
+            'bytes' => 70144,
+            'sha256' => '272f8db913fb2ec106206bb9fd23d864c44806ceea69fb577aaeb4dfb087e688',
+            'types' => [0, 4],
+        ],
+        'zstd' => [
+            'path' => 'data/leveldb-zstd-v1.tar',
+            'bytes' => 69632,
+            'sha256' => 'a265324bdc61ebdc143705c1625b8c71a0b4affcbe36d99caa92dfcbc2611668',
+            'types' => [0, 3],
+        ],
+    ];
+    ensure(array_column($metadata['fixtures'], 'id') === array_keys($expected), 'LevelDB fixture set or order differs from the qualified set.');
+
+    foreach ($metadata['fixtures'] as $fixture) {
+        $identity = $expected[$fixture['id']];
+        ensure($fixture['path'] === $identity['path'], "LevelDB {$fixture['id']} fixture path differs from the qualified path.");
+        ensure($fixture['bytes'] === $identity['bytes'], "LevelDB {$fixture['id']} fixture byte count differs from the qualified value.");
+        ensure($fixture['sha256'] === $identity['sha256'], "LevelDB {$fixture['id']} fixture digest differs from the qualified value.");
+        ensure($fixture['compressionTypes'] === $identity['types'], "LevelDB {$fixture['id']} compression types differ from the qualified set.");
+
+        $archive = $fixtureRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $fixture['path']);
+        ensure(is_file($archive) && filesize($archive) === $identity['bytes'], "LevelDB {$fixture['id']} fixture archive is missing or has the wrong size.");
+        ensure(hash_file('sha256', $archive) === $identity['sha256'], "LevelDB {$fixture['id']} fixture archive digest does not match.");
+        $databasePath = $temporaryRoot . DIRECTORY_SEPARATOR . 'independent-leveldb-' . $fixture['id'];
+        UstarArchive::extract($archive, $databasePath);
+        $inspection = LevelDbTableInspector::inspectDatabase($databasePath);
+        ensure($inspection['compressionTypes'] === $identity['types'], "LevelDB {$fixture['id']} fixture physical compression tags do not match.");
+
+        $database = new LevelDB(
+            $databasePath,
+            ['create_if_missing' => false, 'paranoid_checks' => true],
+            ['verify_check_sum' => true, 'fill_cache' => false],
+        );
+        foreach ($records as $record) {
+            ensure(
+                $database->get($record['key'], ['verify_check_sum' => true, 'fill_cache' => false]) === $record['value'],
+                "LevelDB {$fixture['id']} fixture lookup returned the wrong value.",
+            );
+        }
+        ensure($database->get('missing-fixture-key', ['verify_check_sum' => true]) === false, "LevelDB {$fixture['id']} missing-key lookup did not return false.");
+        $index = 0;
+        $iterator = $database->getIterator(['verify_check_sum' => true, 'fill_cache' => false]);
+        foreach ($iterator as $key => $value) {
+            ensure(
+                isset($records[$index]) && $key === $records[$index]['key'] && $value === $records[$index]['value'],
+                "LevelDB {$fixture['id']} iteration differs at entry $index.",
+            );
+            $index++;
+        }
+        ensure($index === count($records), "LevelDB {$fixture['id']} iteration returned the wrong entry count.");
+        unset($iterator, $database);
+        gc_collect_cycles();
+
+        $reopened = new LevelDB(
+            $databasePath,
+            ['create_if_missing' => false, 'paranoid_checks' => true],
+            ['verify_check_sum' => true, 'fill_cache' => false],
+        );
+        ensure($reopened->get($records[0]['key'], ['verify_check_sum' => true]) === $records[0]['value'], "LevelDB {$fixture['id']} did not release its process lock cleanly.");
+        unset($reopened);
         gc_collect_cycles();
     }
 }
@@ -651,10 +745,17 @@ try {
         $qualification->run('LevelDB CRUD, batch, reopen, delete, and locking', static function () use ($temporaryRoot): void {
             qualifyLevelDb($temporaryRoot);
         });
+        $qualification->run('independent LevelDB none, raw-DEFLATE, and zstd fixtures', static function () use ($temporaryRoot): void {
+            qualifyIndependentLevelDbFixtures($temporaryRoot);
+        });
     } elseif ($allowMissingLevelDb) {
         $qualification->skip('LevelDB CRUD, batch, reopen, delete, and locking', 'extension is absent and --allow-missing-leveldb was explicitly supplied');
+        $qualification->skip('independent LevelDB none, raw-DEFLATE, and zstd fixtures', 'extension is absent and --allow-missing-leveldb was explicitly supplied');
     } else {
         $qualification->run('LevelDB CRUD, batch, reopen, delete, and locking', static function (): void {
+            throw new RuntimeException('Required leveldb extension is not loaded.');
+        });
+        $qualification->run('independent LevelDB none, raw-DEFLATE, and zstd fixtures', static function (): void {
             throw new RuntimeException('Required leveldb extension is not loaded.');
         });
     }

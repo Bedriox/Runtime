@@ -76,6 +76,25 @@ RakNet behavior, world output, gameplay defaults, or the client journey.
 ## Independent evidence
 
 The LevelDB reader cannot be certified only by reading data emitted by the same
-writer. Compatibility fixtures record their exact origin, format, checksum,
-license, and review date. Test secrets, private world data, and proprietary game
-assets are forbidden.
+writer. The checked-in corpus is written independently by pinned producer
+commits: df-mc/goleveldb produces the uncompressed and raw-DEFLATE databases,
+and Google LevelDB produces the zstd database after the documented narrow
+compression-tag patch from upstream value 2 to Bedrock value 3. The fixtures
+are deterministic uncompressed USTAR archives and omit mutable `LOCK`, `LOG`,
+and log files.
+
+`tests/leveldb-fixture-test.php` verifies schema 2 metadata, producer and
+generator identities, licenses, archive and corpus hashes, deterministic corpus
+and archive reconstruction, physical SST compression tags, and malformed-table
+rejection. When the LevelDB extension is available, the native probe reads the
+complete binary corpus. Package qualification extracts each exact archive,
+verifies every key through direct reads and ordered iteration with checksum
+verification enabled, and proves that database locks are released by reopening
+the database. Packaging runs that qualification with both the original and the
+relocated runtime.
+
+The fixture corpus includes empty and binary values, NUL-bearing keys and
+values, boundary-sized records, and compressible and incompressible payloads.
+Its exact origin, format, checksums, licenses, producer toolchains, and rebuild
+commands are recorded in `fixtures/metadata.json`. Test secrets, private world
+data, and proprietary game assets are forbidden.

@@ -2,7 +2,8 @@
 
 Bedriox Runtime downloads, builds, or packages the reviewed inputs below.
 Versions and immutable digests are authoritative in
-`manifests/dependencies.json`.
+`manifests/dependencies.json` for packaged dependencies and
+`fixtures/metadata.json` for independent test-fixture producers.
 
 | Component | License | License copy |
 | --- | --- | --- |
@@ -38,6 +39,8 @@ Versions and immutable digests are authoritative in
 | SQLite (PHP SDK package) | Public domain blessing | `licenses/sqlite-blessing.txt` |
 | zlib (PHP SDK package) | Zlib | `licenses/zlib-Zlib.txt` |
 | CMake | BSD-3-Clause | `licenses/cmake-BSD-3-Clause.txt` |
+| df-mc/goleveldb fixture producer | BSD-2-Clause | `licenses/df-mc-goleveldb-BSD-2-Clause.txt` |
+| Google LevelDB fixture producer | BSD-3-Clause | `licenses/google-leveldb-BSD-3-Clause.txt` |
 
 The Windows x86-64 PHP SDK packages above form the reviewed native dependency
 closure for the configured PHP 8.4 build. Their exact archive URLs, sizes, and

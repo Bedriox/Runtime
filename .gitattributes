@@ -1,0 +1,4 @@
+fixtures/metadata.json text eol=lf
+fixtures/generators/** text eol=lf
+fixtures/corpus/** binary
+fixtures/data/** binary

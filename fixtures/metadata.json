@@ -1,4 +1,147 @@
 {
-    "schemaVersion": 1,
-    "fixtures": []
+    "schemaVersion": 2,
+    "corpus": {
+        "path": "corpus/leveldb-corpus-v1.bin",
+        "sha256": "5c8ceea100dd3beb43a30762f82f5a5485f72be5c5fe7fe877db63d1aec271a0",
+        "bytes": 111230,
+        "format": "bedriox-length-prefixed-binary-v1",
+        "entries": 52
+    },
+    "sources": [
+        {
+            "id": "df-mc-goleveldb",
+            "repository": "https://github.com/df-mc/goleveldb",
+            "commit": "e85415c04dab8522f9f67f66e1d25511478c1769",
+            "url": "https://codeload.github.com/df-mc/goleveldb/tar.gz/e85415c04dab8522f9f67f66e1d25511478c1769",
+            "archiveSha256": "4ec2f76a86851815d9900e632b461268ad80bfc3de0d17977b338c5cc9fae56c",
+            "archiveBytes": 149411,
+            "license": "BSD-2-Clause",
+            "licensePath": "../licenses/df-mc-goleveldb-BSD-2-Clause.txt",
+            "role": "Independent uncompressed and raw-DEFLATE fixture producer",
+            "modifications": []
+        },
+        {
+            "id": "google-leveldb",
+            "repository": "https://github.com/google/leveldb",
+            "commit": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+            "url": "https://codeload.github.com/google/leveldb/tar.gz/7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+            "archiveSha256": "ae7117a5180fe263d10d77ec03b8109aaf93af8541615ff1361ef120c0506e9f",
+            "archiveBytes": 245193,
+            "license": "BSD-3-Clause",
+            "licensePath": "../licenses/google-leveldb-BSD-3-Clause.txt",
+            "role": "Independent zstd fixture producer",
+            "modifications": [
+                {
+                    "path": "generators/patches/google-leveldb-zstd-tag.patch",
+                    "sha256": "1e23970d8cf0d3c75136729aa79e4588bfd2690aabffca1af0995c6d6b494f8f",
+                    "description": "Changes only the persisted zstd compression enumerator from 2 to Bedrock value 3."
+                }
+            ]
+        }
+    ],
+    "generators": [
+        {
+            "id": "go-none-and-raw-deflate",
+            "paths": [
+                "generators/go/go.mod",
+                "generators/go/main.go"
+            ],
+            "sha256": [
+                "f2a8a1196f79d10842a654e657c98edec8198dfa332ea3a955e9e9a7c62cb640",
+                "f310c55211b69c437e54b0aaed1cb14dad80b40b8836b17b3c7518e80682bdaf"
+            ],
+            "source": "df-mc-goleveldb",
+            "inputs": [],
+            "commands": [
+                "go mod edit -replace=github.com/df-mc/goleveldb=<verified-source>",
+                "go mod tidy",
+                "go build -trimpath -o fixture-generator",
+                "fixture-generator none <corpus> <output>",
+                "fixture-generator raw-deflate <corpus> <output>"
+            ],
+            "toolchain": "go1.27.1 windows/amd64",
+            "toolchainArchive": {
+                "url": "https://go.dev/dl/go1.27.1.windows-amd64.zip",
+                "bytes": 78931360,
+                "sha256": "a3911b5e0e1b1053f25ed0675f4c1c6aad1e2bfcf253df2b9be4caabd2edd95d"
+            }
+        },
+        {
+            "id": "cpp-zstd",
+            "paths": [
+                "generators/cpp/CMakeLists.txt",
+                "generators/cpp/main.cc"
+            ],
+            "sha256": [
+                "a1bf5508fe328a9988a47f3de7c01e3af52f03951d4d52a5b11994ee1f1a1097",
+                "b9acc2f673d3387d255dfd70acea9d7b49e7dfde3eb9b483e64b0a6c89536054"
+            ],
+            "source": "google-leveldb",
+            "inputs": [
+                {
+                    "manifestSource": "zstd",
+                    "version": "1.5.7",
+                    "bytes": 2434947,
+                    "sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3"
+                }
+            ],
+            "commands": [
+                "git apply generators/patches/google-leveldb-zstd-tag.patch",
+                "cmake -S generators/cpp -B <build> -DLEVELDB_SOURCE=<verified-source> -DZSTD_LIBRARY=<verified-static-zstd> -DZSTD_INCLUDE=<verified-zstd-headers>",
+                "cmake --build <build> --config Release",
+                "leveldb_fixture_generator <corpus> <output>"
+            ],
+            "toolchain": "CMake 4.3.1-msvc1; MSVC 19.29.30159.0",
+            "toolchainArchive": null
+        },
+        {
+            "id": "corpus-and-archive-assembly",
+            "paths": [
+                "generators/build-corpus.php",
+                "generators/DeterministicUstar.php",
+                "generators/rebuild.php"
+            ],
+            "sha256": [
+                "c6c92951147fdef37b223b4ee72cf08eb04bcb3a38b4f121325db2e8077774af",
+                "49bbbe092eff13488978cbc822c061efc7f47cc94cc072f4d777107323eb560c",
+                "85cd43c091f0bdca8b1eb55a1ef874fa7e67af6799c0527c95cbd5ba2f9def8c"
+            ],
+            "source": "bedriox-runtime",
+            "inputs": [],
+            "commands": [
+                "php generators/rebuild.php --none-db=<verified-db> --raw-db=<verified-db> --zstd-db=<verified-db> --output=<new-directory>"
+            ],
+            "toolchain": "PHP 8.4",
+            "toolchainArchive": null
+        }
+    ],
+    "fixtures": [
+        {
+            "id": "none",
+            "path": "data/leveldb-none-v1.tar",
+            "sha256": "bfd643a66d952d2c43b1fcfdd5d843b9df3188d55389eb242424f17fce19ebe2",
+            "bytes": 120832,
+            "producer": "df-mc-goleveldb",
+            "compressionTypes": [0],
+            "format": "ustar"
+        },
+        {
+            "id": "raw-zlib",
+            "path": "data/leveldb-raw-zlib-v1.tar",
+            "sha256": "272f8db913fb2ec106206bb9fd23d864c44806ceea69fb577aaeb4dfb087e688",
+            "bytes": 70144,
+            "producer": "df-mc-goleveldb",
+            "compressionTypes": [0, 4],
+            "format": "ustar"
+        },
+        {
+            "id": "zstd",
+            "path": "data/leveldb-zstd-v1.tar",
+            "sha256": "a265324bdc61ebdc143705c1625b8c71a0b4affcbe36d99caa92dfcbc2611668",
+            "bytes": 69632,
+            "producer": "google-leveldb",
+            "compressionTypes": [0, 3],
+            "format": "ustar"
+        }
+    ]
 }
