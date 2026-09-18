@@ -44,6 +44,7 @@ foreach ([
     '--define-variable=libdir="$php_dependency_root/lib" --define-variable=includedir="$php_dependency_root/include"',
     '--static --libs libcurl',
     'str_replace($argv[2], $argv[3], $argv[1])',
+    "-r 'echo str_replace(\$argv[2], \$argv[3], \$argv[1]);' -- \"\$CURL_CFLAGS\"",
     'relocated libcurl flags retain the private dependency prefix',
     'for framework in CoreFoundation CoreServices SystemConfiguration',
     'pinned macOS libcurl metadata omits framework: $framework',
