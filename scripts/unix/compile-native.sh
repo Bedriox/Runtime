@@ -164,8 +164,14 @@ cp -R -p -- "$php_source" "$php_work"
 	LIBZIP_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libzip)
 	# Static libcurl needs its complete private dependency closure. On macOS
 	# this includes the platform frameworks required by curl_easy_perform().
-	CURL_CFLAGS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --cflags libcurl)
-	CURL_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libcurl)
+	CURL_CFLAGS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config \
+		--define-variable=prefix="$php_dependency_root" --define-variable=exec_prefix="$php_dependency_root" \
+		--define-variable=libdir="$php_dependency_root/lib" --define-variable=includedir="$php_dependency_root/include" \
+		--cflags libcurl)
+	CURL_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config \
+		--define-variable=prefix="$php_dependency_root" --define-variable=exec_prefix="$php_dependency_root" \
+		--define-variable=libdir="$php_dependency_root/lib" --define-variable=includedir="$php_dependency_root/include" \
+		--static --libs libcurl)
 	php_platform_ldflags=
 	case "$target" in
 		macos-*)
@@ -198,6 +204,25 @@ cp -R -p -- "$php_source" "$php_work"
 			download) private_root=$download_root ;;
 		esac
 		if grep -F "$private_root" main/build-defs.h >/dev/null; then
+			php -n -r '
+$lines = file($argv[1], FILE_IGNORE_NEW_LINES);
+if ($lines === false) {
+    fwrite(STDERR, "error: could not read PHP build definitions\n");
+    exit(1);
+}
+$needle = $argv[2];
+$roots = array_slice($argv, 3);
+foreach ($lines as $line) {
+    if (!str_contains($line, $needle)) {
+        continue;
+    }
+    foreach ($roots as $index => $root) {
+        $line = str_replace($root, "<private-" . ["build", "source", "repository", "download"][$index] . "-root>", $line);
+    }
+    fwrite(STDERR, "sanitized PHP build-definition witness: " . substr($line, 0, 1024) . "\n");
+    break;
+}
+' main/build-defs.h "$private_root" "$build_root" "$source_root" "$repository_root" "$download_root"
 			runtime_die "PHP build definitions contain a private $private_root_kind path"
 		fi
 	done

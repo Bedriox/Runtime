@@ -133,7 +133,9 @@ command.
 The pinned static libcurl pkg-config closure is passed explicitly. PHP's
 configure helpers ignore `-framework` pairs in that closure, so macOS builds
 also verify the expected CoreFoundation, CoreServices, and SystemConfiguration
-metadata and retain those frameworks in PHP's link checks.
+metadata and retain those frameworks in PHP's link checks. All pkg-config
+directory variables are overridden with the neutral relative dependency prefix
+because libcurl's generated metadata otherwise records its build directory.
 GNU libiconv is built from the reviewed source manifest for every Unix target,
 so PHP does not depend on SDK-only headers or an ambient Homebrew library.
 
