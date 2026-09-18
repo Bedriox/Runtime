@@ -1,0 +1,42 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Repository metadata and scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Use PHP 8.4 for repository tooling
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: none
+
+      - name: Check shell syntax
+        shell: bash
+        run: |
+          bash -n compile.sh
+          find scripts/unix -type f -name '*.sh' -print0 | sort -z | xargs -0 -r -n1 bash -n
+
+      - name: Validate repository metadata
+        run: php tools/validate.php

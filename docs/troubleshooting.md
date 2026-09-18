@@ -1,0 +1,34 @@
+# Runtime Troubleshooting
+
+## Visual Studio is installed but no compiler is found
+
+The IDE and the C++ workload are separate installations. PHP 8.4 Windows builds
+require the supported Visual Studio 2022/VS17 v143 compiler family. Add Desktop
+development with C++, MSVC v143 x64/x86 tools, ATL, a compatible Windows SDK,
+and CMake tools, then open a fresh VS 2022 developer shell.
+
+## A download hash does not match
+
+Stop. Remove only the named file from Runtime's verified download cache and try
+again. Do not update the manifest to match an unexpected download. Confirm the
+upstream release and digest through its authoritative channel before changing a
+pin.
+
+## TLS cannot find a certificate file
+
+Confirm `certs/cacert.pem` exists inside the package and that both
+`curl.cainfo` and `openssl.cafile` resolve it relative to the runtime. Do not
+disable certificate verification or point a release package at a private
+machine path.
+
+## LevelDB fails to load
+
+Check that the PHP extension ABI matches the packaged PHP build and that all
+native libraries are present under the package. A stock LevelDB build is not a
+drop-in replacement for the required raw-zlib and zstd-compatible fork.
+
+## A package works only in its build directory
+
+Treat this as a release-blocking relocation failure. Inspect dynamic-library
+resolution, extension paths, CA paths, and generated configuration for absolute
+build paths. Do not work around it by changing the system `PATH`.

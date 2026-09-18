@@ -1,0 +1,359 @@
+{
+    "schemaVersion": 1,
+    "targets": [
+        "windows-x86_64",
+        "linux-x86_64",
+        "linux-arm64",
+        "macos-x86_64",
+        "macos-arm64",
+        "windows-arm64"
+    ],
+    "targetClosures": {
+        "windows-x86_64": [
+            "php",
+            "leveldb",
+            "php-leveldb",
+            "ca-bundle",
+            "php-sdk-binary-tools",
+            "cmake-windows-x86_64",
+            "php-sdk-dep-brotli",
+            "php-sdk-dep-libbzip2",
+            "php-sdk-dep-libcurl",
+            "php-sdk-dep-libiconv",
+            "php-sdk-dep-liblzma",
+            "php-sdk-dep-libonig",
+            "php-sdk-dep-libsodium",
+            "php-sdk-dep-libssh2",
+            "php-sdk-dep-libzip",
+            "php-sdk-dep-libzstd",
+            "php-sdk-dep-libxml2",
+            "php-sdk-dep-mpir",
+            "php-sdk-dep-nghttp2",
+            "php-sdk-dep-openssl",
+            "php-sdk-dep-sqlite3",
+            "php-sdk-dep-zlib"
+        ]
+    },
+    "sources": {
+        "php": {
+            "version": "8.4.25",
+            "url": "https://www.php.net/distributions/php-8.4.25.tar.xz",
+            "sha256": "dc1ad8b4109898d9db49744450403874858c23efc685b1032a50bd1e83906848",
+            "bytes": 13759432,
+            "archiveType": "tar.xz",
+            "license": "PHP-3.01",
+            "licenseFile": "licenses/php-PHP-3.01.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "leveldb": {
+            "commit": "aba9e148149bda96c5212905c67275a53e701b1c",
+            "url": "https://codeload.github.com/pmmp/leveldb/tar.gz/aba9e148149bda96c5212905c67275a53e701b1c",
+            "sha256": "d0e2b06dcad41a790bd872217b097d83010eae5aa4feff4e6614d79015a824b2",
+            "bytes": 247368,
+            "archiveType": "tar.gz",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/pmmp-leveldb-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "php-leveldb": {
+            "commit": "88071eb1b1eae96af043229104b9d813f7cbe40c",
+            "url": "https://codeload.github.com/pmmp/php-leveldb/tar.gz/88071eb1b1eae96af043229104b9d813f7cbe40c",
+            "sha256": "6723f41667455dc5fb5e0a6b069fc9c83ec12e4e2d1ed2340033cd62584263ba",
+            "bytes": 30027,
+            "archiveType": "tar.gz",
+            "license": "PHP-3.01",
+            "licenseFile": "licenses/pmmp-php-leveldb-PHP-3.01.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "ca-bundle": {
+            "version": "2026-08-13",
+            "url": "https://curl.se/ca/cacert-2026-08-13.pem",
+            "sha256": "f66dff1bdf8f96060b8177976f8b7d9254bc89bc4db933d769f7384d28480bc9",
+            "bytes": 188900,
+            "archiveType": "pem",
+            "license": "MPL-2.0",
+            "licenseFile": "licenses/cacert-MPL-2.0.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "libsodium": {
+            "version": "1.0.22",
+            "url": "https://download.libsodium.org/libsodium/releases/libsodium-1.0.22.tar.gz",
+            "sha256": "adbdd8f16149e81ac6078a03aca6fc03b592b89ef7b5ed83841c086191be3349",
+            "bytes": 2008529,
+            "archiveType": "tar.gz",
+            "license": "ISC",
+            "licenseFile": "licenses/libsodium-ISC.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "libxml2": {
+            "version": "2.15.4",
+            "url": "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.4.tar.xz",
+            "sha256": "98087fd181d9070724f3fbc65c7377db03038eb92bd882374daff44940138821",
+            "bytes": 3177444,
+            "archiveType": "tar.xz",
+            "license": "MIT",
+            "licenseFile": "licenses/libxml2-MIT.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "oniguruma": {
+            "version": "6.9.10",
+            "url": "https://github.com/kkos/oniguruma/releases/download/v6.9.10/onig-6.9.10.tar.gz",
+            "sha256": "2a5cfc5ae259e4e97f86b68dfffc152cdaffe94e2060b770cb827238d769fc05",
+            "bytes": 979159,
+            "archiveType": "tar.gz",
+            "license": "BSD-2-Clause",
+            "licenseFile": "licenses/oniguruma-BSD-2-Clause.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "zlib": {
+            "version": "1.3.2",
+            "url": "https://zlib.net/zlib-1.3.2.tar.gz",
+            "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+            "bytes": 1502830,
+            "archiveType": "tar.gz",
+            "license": "Zlib",
+            "licenseFile": "licenses/zlib-Zlib.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "gmp": {
+            "version": "6.3.0",
+            "url": "https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz",
+            "sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898",
+            "bytes": 2094196,
+            "archiveType": "tar.xz",
+            "license": "LGPL-3.0-or-later",
+            "licenseFile": "licenses/gmp-LGPL-3.0-or-later.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "curl": {
+            "version": "8.22.0",
+            "url": "https://curl.se/download/curl-8.22.0.tar.xz",
+            "sha256": "f7ef3ae8a22e521f289803fe93543eb64c329b58aa73a9e224dfd915a2a5f4f7",
+            "bytes": 2953092,
+            "archiveType": "tar.xz",
+            "license": "curl",
+            "licenseFile": "licenses/curl-curl.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "openssl": {
+            "version": "3.5.4",
+            "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.4/openssl-3.5.4.tar.gz",
+            "sha256": "967311f84955316969bdb1d8d4b983718ef42338639c621ec4c34fddef355e99",
+            "bytes": 53190367,
+            "archiveType": "tar.gz",
+            "license": "Apache-2.0",
+            "licenseFile": "licenses/openssl-Apache-2.0.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "libzip": {
+            "version": "1.11.4",
+            "url": "https://libzip.org/download/libzip-1.11.4.tar.xz",
+            "sha256": "8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b",
+            "bytes": 793340,
+            "archiveType": "tar.xz",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/libzip-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "sqlite": {
+            "version": "3.53.4",
+            "url": "https://www.sqlite.org/2026/sqlite-autoconf-3530400.tar.gz",
+            "sha256": "0e9483900e92cd5de8fd48d16bf9200145a61f7fd5be542a5ac81d8a9516eb9c",
+            "bytes": 3283177,
+            "archiveType": "tar.gz",
+            "license": "blessing",
+            "licenseFile": "licenses/sqlite-blessing.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "zstd": {
+            "version": "1.5.7",
+            "url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz",
+            "sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+            "bytes": 2434947,
+            "archiveType": "tar.gz",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/zstd-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "php-sdk-binary-tools": {
+            "commit": "1142e4abaf90ceb6cc25d983797b25cc948669cf",
+            "url": "https://codeload.github.com/php/php-sdk-binary-tools/zip/1142e4abaf90ceb6cc25d983797b25cc948669cf",
+            "sha256": "083324ab6ad0f5b8727539d717600ab0f29a2fe84bd147095cf0b115a63a45c4",
+            "bytes": 36696725,
+            "archiveType": "zip",
+            "license": "BSD-2-Clause",
+            "licenseFile": "licenses/php-sdk-binary-tools-BSD-2-Clause.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-brotli": {
+            "version": "1.2.0",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/brotli-1.2.0-vs17-x64.zip",
+            "sha256": "61aec2187d4317826b374f4f2d8ef4b652edb46ae9d5b68820a840c94427644e",
+            "bytes": 1386324,
+            "archiveType": "zip",
+            "license": "MIT",
+            "licenseFile": "licenses/brotli-MIT.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libbzip2": {
+            "version": "1.0.8-1",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libbzip2-1.0.8-1-vs17-x64.zip",
+            "sha256": "f7f331cde4b587e9f236d66aa2c84483ce256da81b805e8e97d473e7377e5079",
+            "bytes": 123426,
+            "archiveType": "zip",
+            "license": "bzip2-1.0.6",
+            "licenseFile": "licenses/libbzip2-bzip2-1.0.6.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libcurl": {
+            "version": "8.21.0",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libcurl-8.21.0-vs17-x64.zip",
+            "sha256": "14969a681a0215d298f086904579552858253fd658308cb73c1360e2d92dd67e",
+            "bytes": 8746136,
+            "archiveType": "zip",
+            "license": "curl",
+            "licenseFile": "licenses/curl-curl.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libiconv": {
+            "version": "1.19",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libiconv-1.19-vs17-x64.zip",
+            "sha256": "4fd0048d0985c6f32ff933187c360571b0380cb20690ae501ce233fb376360d1",
+            "bytes": 1881623,
+            "archiveType": "zip",
+            "license": "LGPL-2.1-or-later",
+            "licenseFile": "licenses/libiconv-LGPL-2.1-or-later.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-liblzma": {
+            "version": "5.8.3",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/liblzma-5.8.3-vs17-x64.zip",
+            "sha256": "1d83873ae761b132ac5cff0cde9840f87602b47a86e0452f6002504574730e37",
+            "bytes": 765781,
+            "archiveType": "zip",
+            "license": "0BSD",
+            "licenseFile": "licenses/liblzma-0BSD.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libonig": {
+            "version": "6.9.10",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libonig-6.9.10-vs17-x64.zip",
+            "sha256": "a2c85df53bd6977f4ec5ba62094695d2b419c6b9d37db8f43d91e14d7ef968b9",
+            "bytes": 661832,
+            "archiveType": "zip",
+            "license": "BSD-2-Clause",
+            "licenseFile": "licenses/oniguruma-BSD-2-Clause.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libsodium": {
+            "version": "1.0.22",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libsodium-1.0.22-vs17-x64.zip",
+            "sha256": "33a2b29fdc9e2dc6771839d0e4ca4f8a9cf0f578e6aaee0b1c0e85b5977d4bb8",
+            "bytes": 1735704,
+            "archiveType": "zip",
+            "license": "ISC",
+            "licenseFile": "licenses/libsodium-ISC.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libssh2": {
+            "version": "1.11.1-6",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libssh2-1.11.1-6-vs17-x64.zip",
+            "sha256": "f8c2c2f657bca7ca965536adb8f4da18a329dd577135ca786d98b712ff0b5d55",
+            "bytes": 721110,
+            "archiveType": "zip",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/libssh2-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libzip": {
+            "version": "1.11.4",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libzip-1.11.4-vs17-x64.zip",
+            "sha256": "ab8fc58c5bbe093f1c829f5f141a24ee54f0a163568f711017d5fe0df2d73048",
+            "bytes": 422765,
+            "archiveType": "zip",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/libzip-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libzstd": {
+            "version": "1.5.7",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libzstd-1.5.7-vs17-x64.zip",
+            "sha256": "59dbce5548104788ccfc5040bb7140916454fd0138d306705bd9b3d67741dc4a",
+            "bytes": 1756499,
+            "archiveType": "zip",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/zstd-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-libxml2": {
+            "version": "2.11.9-7",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/libxml2-2.11.9-7-vs17-x64.zip",
+            "sha256": "861ac41128f8b97d5da13f4670247504ee43c85ba2ba552b91f1e0971a0a61bb",
+            "bytes": 7425305,
+            "archiveType": "zip",
+            "license": "MIT",
+            "licenseFile": "licenses/libxml2-MIT.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-mpir": {
+            "version": "3.0.0-2",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/mpir-3.0.0-2-vs17-x64.zip",
+            "sha256": "d89f1ebd63eb4cfc72960ec207c9d60e688fa0d5cfc2284a0efcdee04de3a7b7",
+            "bytes": 1138929,
+            "archiveType": "zip",
+            "license": "LGPL-3.0-or-later",
+            "licenseFile": "licenses/gmp-LGPL-3.0-or-later.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-nghttp2": {
+            "version": "1.70.0",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/nghttp2-1.70.0-vs17-x64.zip",
+            "sha256": "51e21698b80f4e1a151508656f6ca7caf13adfef65dfefbc160645cf9c1129f1",
+            "bytes": 481238,
+            "archiveType": "zip",
+            "license": "MIT",
+            "licenseFile": "licenses/nghttp2-MIT.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-openssl": {
+            "version": "3.0.21.pl1",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/openssl-3.0.21.pl1-vs17-x64.zip",
+            "sha256": "5072954f6aff9695a98bbcc5d4ef92c8ce0e574394fafbe617278ac068a869b3",
+            "bytes": 10856484,
+            "archiveType": "zip",
+            "license": "Apache-2.0",
+            "licenseFile": "licenses/openssl-Apache-2.0.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-sqlite3": {
+            "version": "3.53.4",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/sqlite3-3.53.4-vs17-x64.zip",
+            "sha256": "abb5e36fc76803b4df9a63ab56b931f37058d62c9e6303172015ff4f101ef4cd",
+            "bytes": 6763712,
+            "archiveType": "zip",
+            "license": "blessing",
+            "licenseFile": "licenses/sqlite-blessing.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "php-sdk-dep-zlib": {
+            "version": "1.3.2",
+            "url": "https://downloads.php.net/~windows/php-sdk/deps/vs17/x64/zlib-1.3.2-vs17-x64.zip",
+            "sha256": "3038dbd503d494718898a150f93d79627df442c344d1d6e77ec413cdeec7999e",
+            "bytes": 211005,
+            "archiveType": "zip",
+            "license": "Zlib",
+            "licenseFile": "licenses/zlib-Zlib.txt",
+            "targets": ["windows-x86_64"]
+        },
+        "cmake-windows-x86_64": {
+            "version": "4.4.3",
+            "url": "https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-windows-x86_64.zip",
+            "sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+            "bytes": 54408599,
+            "archiveType": "zip",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/cmake-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64"]
+        }
+    }
+}

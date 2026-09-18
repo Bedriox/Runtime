@@ -1,0 +1,120 @@
+name: Native runtime build
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: Native target to build and qualify
+        required: true
+        type: string
+      retain_days:
+        description: Artifact retention in days
+        required: false
+        default: '7'
+        type: string
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Native target to build and qualify
+        required: true
+        type: choice
+        options:
+          - linux-x86_64
+          - linux-arm64
+          - macos-arm64
+          - macos-x86_64
+      retain_days:
+        description: Artifact retention in days
+        required: true
+        default: '7'
+        type: choice
+        options:
+          - '1'
+          - '3'
+          - '7'
+          - '14'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-native-${{ inputs.target }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  select-runner:
+    name: Select native runner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      runner: ${{ steps.target.outputs.runner }}
+    steps:
+      - id: target
+        name: Resolve target runner
+        env:
+          TARGET: ${{ inputs.target }}
+        shell: bash
+        run: |
+          case "$TARGET" in
+            linux-x86_64) runner=ubuntu-24.04 ;;
+            linux-arm64) runner=ubuntu-24.04-arm ;;
+            macos-arm64) runner=macos-15 ;;
+            macos-x86_64) runner=macos-15-intel ;;
+            *) echo "Unsupported target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "runner=$runner" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ inputs.target }}
+    needs: select-runner
+    runs-on: ${{ needs.select-runner.outputs.runner }}
+    timeout-minutes: 180
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Use PHP 8.4 for repository tooling
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: none
+
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            autoconf automake bison build-essential cmake libtool-bin pkg-config re2c
+
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install autoconf automake bison cmake libtool pkg-config re2c
+          echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix libtool)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      - name: Restore verified source cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: downloads
+          key: runtime-sources-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('manifests/**') }}
+
+      - name: Build native runtime
+        env:
+          BEDRIOX_RUNTIME_DOWNLOAD_DIR: ${{ github.workspace }}/downloads
+          BEDRIOX_RUNTIME_BUILD_DIR: ${{ runner.temp }}/bedriox-runtime-build
+        shell: bash
+        run: ./compile.sh --target "${{ inputs.target }}"
+
+      - name: Upload qualified package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bedriox-runtime-${{ inputs.target }}-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: ${{ fromJSON(inputs.retain_days) }}
