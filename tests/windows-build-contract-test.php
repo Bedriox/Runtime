@@ -45,7 +45,10 @@ windowsBuildEnsure(
 windowsBuildEnsure(str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure is not bound to the verified SDK dependency tree.');
 windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
+windowsBuildEnsure(str_contains($stage, "'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'"), 'Runtime staging does not load the trusted in-box signature module explicitly.');
 windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
+windowsBuildEnsure(str_contains($stage, '[System.Security.Cryptography.SHA256]::Create()'), 'Runtime staging does not use its shell-independent SHA-256 implementation.');
+windowsBuildEnsure(!str_contains($stage, 'Get-FileHash'), 'Runtime staging depends on an auto-loaded hashing cmdlet.');
 windowsBuildEnsure(
     preg_match('/phpsdk-vs17-\{0\}\.bat/', $orchestrator) === 1,
     'Windows build does not use the pinned VS17 PHP SDK starter.',

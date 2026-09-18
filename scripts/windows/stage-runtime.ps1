@@ -15,6 +15,26 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$securityModule = Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'
+if (-not (Test-Path -LiteralPath $securityModule -PathType Leaf)) {
+    throw 'The trusted Windows PowerShell security module is unavailable.'
+}
+Import-Module -Name $securityModule -Force -ErrorAction Stop
+
+function Get-Sha256([string] $Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            return ([System.BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+        } finally {
+            $sha256.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+}
+
 function Assert-AbsoluteExistingDirectory([string] $Path, [string] $Description) {
     if (-not [System.IO.Path]::IsPathRooted($Path) -or -not (Test-Path -LiteralPath $Path -PathType Container)) {
         throw "$Description must be an existing absolute directory: $Path"
@@ -115,7 +135,7 @@ foreach ($dll in @(Get-ChildItem -LiteralPath $snapshotRoot -Filter *.dll -File)
     $candidates[$key] = $dll.FullName
 }
 $levelDbName = [System.IO.Path]::GetFileName($LevelDbDll).ToLowerInvariant()
-if ($candidates.ContainsKey($levelDbName) -and (Get-FileHash -Algorithm SHA256 $candidates[$levelDbName]).Hash -ne (Get-FileHash -Algorithm SHA256 $LevelDbDll).Hash) {
+if ($candidates.ContainsKey($levelDbName) -and (Get-Sha256 $candidates[$levelDbName]) -ne (Get-Sha256 $LevelDbDll)) {
     throw 'The snapshot and reviewed LevelDB DLL disagree.'
 }
 $candidates[$levelDbName] = $levelDbResolved
@@ -135,7 +155,7 @@ foreach ($dll in $crtDlls) {
         throw "Visual C++ runtime DLL does not have a valid Microsoft signature: $($dll.Name)"
     }
     $key = $dll.Name.ToLowerInvariant()
-    if ($candidates.ContainsKey($key) -and (Get-FileHash -Algorithm SHA256 $candidates[$key]).Hash -ne (Get-FileHash -Algorithm SHA256 $dll.FullName).Hash) {
+    if ($candidates.ContainsKey($key) -and (Get-Sha256 $candidates[$key]) -ne (Get-Sha256 $dll.FullName)) {
         throw "Visual C++ runtime DLL conflicts with the PHP snapshot: $($dll.Name)"
     }
     $candidates[$key] = $dll.FullName
