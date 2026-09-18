@@ -421,14 +421,14 @@ function Expand-VerifiedZip {
             }
             $parent = Split-Path -Parent $target
             if (-not (Test-Path -LiteralPath $parent)) { [void] (New-Item -ItemType Directory -Path $parent) }
-            $input = $entry.Open()
+            $inputStream = $entry.Open()
             $output = [System.IO.File]::Open(
                 $target,
                 [System.IO.FileMode]::CreateNew,
                 [System.IO.FileAccess]::Write,
                 [System.IO.FileShare]::None
             )
-            try { $input.CopyTo($output) } finally { $output.Dispose(); $input.Dispose() }
+            try { $inputStream.CopyTo($output) } finally { $output.Dispose(); $inputStream.Dispose() }
         }
     } finally {
         $zip.Dispose()

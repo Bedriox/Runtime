@@ -76,44 +76,44 @@ function Assert-ArchiveListing {
 
 function Expand-PinnedArchive {
     param(
-        [pscustomobject] $Input,
+        [pscustomobject] $VerifiedInput,
         [string] $Destination,
         [string] $SevenZip,
         [string] $ScratchRoot
     )
 
-    if ($Input.Source.archiveType -eq 'zip') {
-        [void] (Expand-VerifiedZip -Archive $Input.Archive -Destination $Destination)
+    if ($VerifiedInput.Source.archiveType -eq 'zip') {
+        [void] (Expand-VerifiedZip -Archive $VerifiedInput.Archive -Destination $Destination)
         return
     }
-    if ($Input.Source.archiveType -notin @('tar.gz', 'tar.xz')) {
-        throw "Input '$($Input.Id)' is not an extractable archive."
+    if ($VerifiedInput.Source.archiveType -notin @('tar.gz', 'tar.xz')) {
+        throw "Input '$($VerifiedInput.Id)' is not an extractable archive."
     }
     if (-not (Test-Path -LiteralPath $SevenZip -PathType Leaf)) {
         throw "Pinned PHP SDK 7-Zip executable is missing: $SevenZip"
     }
 
-    $wrapper = Join-Path $ScratchRoot ("unpack-{0}" -f $Input.Id)
+    $wrapper = Join-Path $ScratchRoot ("unpack-{0}" -f $VerifiedInput.Id)
     if (Test-Path -LiteralPath $wrapper) { throw "Archive scratch path already exists: $wrapper" }
     [void] (New-Item -ItemType Directory -Path $wrapper)
-    $wrapperListing = @(& $SevenZip l -slt -- $Input.Archive)
-    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not inspect '$($Input.Id)'." }
-    Assert-ArchiveListing -Lines $wrapperListing -Archive $Input.Archive
-    & $SevenZip x -y ("-o{0}" -f $wrapper) -- $Input.Archive | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not unwrap '$($Input.Id)'." }
+    $wrapperListing = @(& $SevenZip l -slt -- $VerifiedInput.Archive)
+    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not inspect '$($VerifiedInput.Id)'." }
+    Assert-ArchiveListing -Lines $wrapperListing -Archive $VerifiedInput.Archive
+    & $SevenZip x -y ("-o{0}" -f $wrapper) -- $VerifiedInput.Archive | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not unwrap '$($VerifiedInput.Id)'." }
     $tarFiles = @(Get-ChildItem -LiteralPath $wrapper -File)
-    if ($tarFiles.Count -ne 1) { throw "Compressed tar input '$($Input.Id)' did not contain exactly one tar stream." }
+    if ($tarFiles.Count -ne 1) { throw "Compressed tar input '$($VerifiedInput.Id)' did not contain exactly one tar stream." }
     $listing = @(& $SevenZip l -slt -- $tarFiles[0].FullName)
-    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not inspect the tar for '$($Input.Id)'." }
-    Assert-ArchiveListing -Lines $listing -Archive $Input.Archive
+    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not inspect the tar for '$($VerifiedInput.Id)'." }
+    Assert-ArchiveListing -Lines $listing -Archive $VerifiedInput.Archive
     if (Test-Path -LiteralPath $Destination) { throw "Archive destination already exists: $Destination" }
     [void] (New-Item -ItemType Directory -Path $Destination)
     & $SevenZip x -y ("-o{0}" -f $Destination) -- $tarFiles[0].FullName | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not extract '$($Input.Id)'." }
+    if ($LASTEXITCODE -ne 0) { throw "Pinned 7-Zip could not extract '$($VerifiedInput.Id)'." }
     $links = @(Get-ChildItem -LiteralPath $Destination -Force -Recurse | Where-Object {
         ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
     })
-    if ($links.Count -gt 0) { throw "Extracted archive contains a reparse point: $($Input.Id)" }
+    if ($links.Count -gt 0) { throw "Extracted archive contains a reparse point: $($VerifiedInput.Id)" }
 }
 
 $sourceRoot = Join-Path $InvocationRoot 'sources'
@@ -134,9 +134,9 @@ if ($null -eq $sevenZip) { throw 'The pinned PHP SDK archive does not contain 7z
 
 $expanded = @{ 'php-sdk-binary-tools' = $sdkDestination }
 foreach ($id in @('php', 'leveldb', 'php-leveldb', 'cmake-windows-x86_64')) {
-    $input = Get-Input -Id $id
+    $verifiedInput = Get-Input -Id $id
     $destination = Join-Path $sourceRoot $id
-    Expand-PinnedArchive -Input $input -Destination $destination -SevenZip $sevenZip.FullName -ScratchRoot $workRoot
+    Expand-PinnedArchive -VerifiedInput $verifiedInput -Destination $destination -SevenZip $sevenZip.FullName -ScratchRoot $workRoot
     $expanded[$id] = $destination
 }
 
@@ -146,13 +146,13 @@ $dependencyInputs = @($Sources | Where-Object { $_.Id -like 'php-sdk-dep-*' })
 if ($dependencyInputs.Count -ne 16) {
     throw "Expected the reviewed 16-package Windows dependency closure, got $($dependencyInputs.Count)."
 }
-foreach ($input in $dependencyInputs) {
-    if ($input.Source.archiveType -ne 'zip') {
-        throw "Windows dependency package '$($input.Id)' is not a ZIP archive."
+foreach ($dependencyInput in $dependencyInputs) {
+    if ($dependencyInput.Source.archiveType -ne 'zip') {
+        throw "Windows dependency package '$($dependencyInput.Id)' is not a ZIP archive."
     }
-    $packageRoot = Join-Path $sourceRoot $input.Id
-    [void] (Expand-VerifiedZip -Archive $input.Archive -Destination $packageRoot)
-    Merge-VerifiedDependencyTree -Source $packageRoot -Destination $depsSource -PackageId $input.Id
+    $packageRoot = Join-Path $sourceRoot $dependencyInput.Id
+    [void] (Expand-VerifiedZip -Archive $dependencyInput.Archive -Destination $packageRoot)
+    Merge-VerifiedDependencyTree -Source $packageRoot -Destination $depsSource -PackageId $dependencyInput.Id
 }
 
 $phpSource = Get-SourceRoot -Directory $expanded.php -Marker 'buildconf.bat'

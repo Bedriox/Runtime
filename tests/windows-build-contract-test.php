@@ -12,9 +12,14 @@ function windowsBuildEnsure(bool $condition, string $message): void
 $root = dirname(__DIR__);
 $workflow = file_get_contents($root . '/.github/workflows/native-build.yml');
 $orchestrator = file_get_contents($root . '/scripts/windows/native-build.ps1');
+$runtimeBuild = file_get_contents($root . '/scripts/windows/RuntimeBuild.psm1');
 $driver = file_get_contents($root . '/scripts/windows/native-build.cmd');
 $stage = file_get_contents($root . '/scripts/windows/stage-runtime.ps1');
-windowsBuildEnsure(is_string($workflow) && is_string($orchestrator) && is_string($driver) && is_string($stage), 'Windows build contract inputs could not be read.');
+windowsBuildEnsure(is_string($workflow) && is_string($orchestrator) && is_string($runtimeBuild) && is_string($driver) && is_string($stage), 'Windows build contract inputs could not be read.');
+windowsBuildEnsure(
+    preg_match('/\$input\b/i', $orchestrator . "\n" . $runtimeBuild) !== 1,
+    'Windows build scripts must not shadow PowerShell\'s reserved $input automatic variable.',
+);
 
 $variables = [
     'BEDRIOX_NATIVE_PHP_SOURCE',
