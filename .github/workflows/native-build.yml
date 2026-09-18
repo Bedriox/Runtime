@@ -19,6 +19,7 @@ on:
         required: true
         type: choice
         options:
+          - windows-x86_64
           - linux-x86_64
           - linux-arm64
           - macos-arm64
@@ -56,6 +57,7 @@ jobs:
         shell: bash
         run: |
           case "$TARGET" in
+            windows-x86_64) runner=windows-2022 ;;
             linux-x86_64) runner=ubuntu-24.04 ;;
             linux-arm64) runner=ubuntu-24.04-arm ;;
             macos-arm64) runner=macos-15 ;;
@@ -101,15 +103,25 @@ jobs:
       - name: Restore verified source cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
-          path: downloads
+          path: ${{ github.workspace }}/downloads
           key: runtime-sources-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('manifests/**') }}
 
-      - name: Build native runtime
+      - name: Build native runtime on Unix
+        if: runner.os != 'Windows'
         env:
           BEDRIOX_RUNTIME_DOWNLOAD_DIR: ${{ github.workspace }}/downloads
           BEDRIOX_RUNTIME_BUILD_DIR: ${{ runner.temp }}/bedriox-runtime-build
         shell: bash
         run: ./compile.sh --target "${{ inputs.target }}"
+
+      - name: Build native runtime on Windows
+        if: runner.os == 'Windows'
+        env:
+          TARGET: ${{ inputs.target }}
+        shell: pwsh
+        run: |
+          $bootstrapPhp = (Get-Command php -ErrorAction Stop).Source
+          .\compile.ps1 -Target $env:TARGET -BootstrapPhp $bootstrapPhp
 
       - name: Upload qualified package
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

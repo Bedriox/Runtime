@@ -9,3 +9,5 @@
   reachability failures.
 - Preserved static libzip Zstandard support by retaining its compression
   libraries at the end of the Unix PHP link plan.
+- Added the manual Windows x86-64 native build and qualification path on the
+  hosted Windows 2022 runner, with a fail-closed PHP SDK task boundary.

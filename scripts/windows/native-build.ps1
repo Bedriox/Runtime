@@ -173,8 +173,33 @@ foreach ($path in @($starter, $driver, $phpSource, $depsSource, $leveldbSource, 
 }
 
 Write-Host 'Starting native PHP and LevelDB compilation in the pinned PHP SDK environment.'
-& cmd.exe /d /s /c "`"$starter`" -t `"$driver`" `"$phpSource`" `"$depsSource`" `"$leveldbSource`" `"$extensionSource`" `"$workRoot`" `"$installRoot`" `"$($cmake.FullName)`""
-if ($LASTEXITCODE -ne 0) { throw "Native Windows build failed with exit code $LASTEXITCODE." }
+$nativeEnvironment = [ordered] @{
+    BEDRIOX_NATIVE_PHP_SOURCE = $phpSource
+    BEDRIOX_NATIVE_PHP_DEPS_SOURCE = $depsSource
+    BEDRIOX_NATIVE_LEVELDB_SOURCE = $leveldbSource
+    BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE = $extensionSource
+    BEDRIOX_NATIVE_WORK_ROOT = $workRoot
+    BEDRIOX_NATIVE_INSTALL_ROOT = $installRoot
+    BEDRIOX_NATIVE_CMAKE_EXE = $cmake.FullName
+}
+foreach ($name in $nativeEnvironment.Keys) {
+    if ($null -ne [Environment]::GetEnvironmentVariable($name, 'Process')) {
+        throw "Reserved native build environment variable is already defined: $name"
+    }
+}
+foreach ($name in $nativeEnvironment.Keys) {
+    [Environment]::SetEnvironmentVariable($name, $nativeEnvironment[$name], 'Process')
+}
+$nativeExitCode = -1
+try {
+    & cmd.exe /d /s /c "`"$starter`" -t `"$driver`""
+    $nativeExitCode = $LASTEXITCODE
+} finally {
+    foreach ($name in $nativeEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+    }
+}
+if ($nativeExitCode -ne 0) { throw "Native Windows build failed with exit code $nativeExitCode." }
 
 $phpExe = Get-ChildItem -LiteralPath $installRoot -Filter php.exe -File -Recurse | Select-Object -First 1
 if ($null -eq $phpExe) { throw 'Native build completed without producing php.exe.' }

@@ -18,6 +18,10 @@ shared-module discovery, sorted file inventory, manifest exclusion, and
 rejection of checksum sidecars inside the package. `tests/package-archive-test.php`
 checks exact ZIP and tar entry/hash inventories, rejects undeclared entries,
 extracts into paths containing spaces, and verifies the Unix executable mode.
+`tests/windows-build-contract-test.php` locks the Windows x86-64 runner mapping,
+the exact downloads cache, the split platform entry points, and the
+environment-only PHP SDK task contract so positional argument forwarding cannot
+silently regress.
 
 ## Native package qualification
 

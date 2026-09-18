@@ -42,9 +42,17 @@ VS 2022 developer shell before building.
 compile.bat -Target windows-x86_64
 ```
 
+The manual native-build workflow also supports `windows-x86_64` on the hosted
+`windows-2022` runner. It uses the workflow's PHP 8.4 installation only as the
+bootstrap interpreter, caches the exact repository `downloads` directory, and
+then compiles and qualifies the package through the same entry point. The PHP
+SDK task receives build paths through reserved process-scoped variables because
+its `-t` task boundary does not forward positional arguments. Those variables
+are rejected if already present and cleared immediately after the task exits.
+
 Windows ARM64 is experimental. The build must refuse to label it supported
 until PHP, GMP, LevelDB, the PHP extension, and the complete suite execute on a
-native ARM64 system.
+native ARM64 system. It is deliberately not selectable in the hosted workflow.
 
 ## Linux
 

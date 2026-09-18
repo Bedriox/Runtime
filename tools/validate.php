@@ -27,6 +27,7 @@ $requiredFiles = [
     'scripts/windows/native-build.ps1', 'scripts/windows/RuntimeBuild.psm1',
     'tests/manifest-cli-test.php', 'tests/manifest-test.php',
     'tests/package-archive-test.php', 'tests/package-test.php', 'tests/qualify.php',
+    'tests/windows-build-contract-test.php',
     'tools/manifest.php', 'tools/ManifestModel.php', 'tools/package.php',
     'tools/package-archive.php', 'tools/PackageArchive.php',
     'tools/package-verify.php', 'tools/PackageBuilder.php',
@@ -109,6 +110,14 @@ if (is_file($packageArchiveTest)) {
     passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($packageArchiveTest), $packageArchiveStatus);
     if ($packageArchiveStatus !== 0) {
         $errors[] = 'Package archive tests failed.';
+    }
+}
+
+$windowsBuildContractTest = $root . '/tests/windows-build-contract-test.php';
+if (is_file($windowsBuildContractTest)) {
+    passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($windowsBuildContractTest), $windowsBuildContractStatus);
+    if ($windowsBuildContractStatus !== 0) {
+        $errors[] = 'Windows native build contract tests failed.';
     }
 }
 
