@@ -11,7 +11,7 @@ final class ManifestModel
 
     private const SOURCE_IDS = [
         'php', 'leveldb', 'php-leveldb', 'ca-bundle', 'libsodium',
-        'libxml2', 'oniguruma', 'zlib', 'gmp', 'curl', 'openssl',
+        'libxml2', 'oniguruma', 'zlib', 'gmp', 'libiconv', 'curl', 'openssl',
         'libzip', 'sqlite', 'zstd', 'php-sdk-binary-tools',
         'php-sdk-dep-brotli', 'php-sdk-dep-libbzip2',
         'php-sdk-dep-libcurl', 'php-sdk-dep-libiconv',

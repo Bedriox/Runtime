@@ -125,6 +125,16 @@
             "licenseFile": "licenses/gmp-LGPL-3.0-or-later.txt",
             "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
         },
+        "libiconv": {
+            "version": "1.19",
+            "url": "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz",
+            "sha256": "88dd96a8c0464eca144fc791ae60cd31cd8ee78321e67397e25fc095c4a19aa6",
+            "bytes": 5921103,
+            "archiveType": "tar.gz",
+            "license": "LGPL-2.1-or-later",
+            "licenseFile": "licenses/libiconv-LGPL-2.1-or-later.txt",
+            "targets": ["linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64"]
+        },
         "curl": {
             "version": "8.22.0",
             "url": "https://curl.se/download/curl-8.22.0.tar.xz",

@@ -16,6 +16,7 @@ Versions and immutable digests are authoritative in
 | Oniguruma | BSD-2-Clause | `licenses/oniguruma-BSD-2-Clause.txt` |
 | zlib | Zlib | `licenses/zlib-Zlib.txt` |
 | GMP | LGPL-3.0-or-later | `licenses/gmp-LGPL-3.0-or-later.txt` |
+| GNU libiconv | LGPL-2.1-or-later | `licenses/libiconv-LGPL-2.1-or-later.txt` |
 | curl | curl | `licenses/curl-curl.txt` |
 | OpenSSL | Apache-2.0 | `licenses/openssl-Apache-2.0.txt` |
 | libzip | BSD-3-Clause | `licenses/libzip-BSD-3-Clause.txt` |

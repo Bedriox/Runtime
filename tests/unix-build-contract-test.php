@@ -22,6 +22,7 @@ unixBuildEnsure(str_contains($workflow, 'PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VE
 foreach ([
     'runtime_prefix=/opt/bedriox-runtime',
     'make install INSTALL_ROOT="$install_stage"',
+    'make_install_autoconf libiconv',
     '-g0',
     '-ffile-prefix-map=',
     '-fdebug-prefix-map=',
@@ -46,6 +47,7 @@ foreach ([
     "php_platform_ldflags='-framework CoreFoundation -framework CoreServices -framework SystemConfiguration'",
     'PKG_CONFIG_PATH="$php_pkg_config_path" CPPFLAGS="-I$php_dependency_root/include" LDFLAGS="-L$php_dependency_root/lib $php_platform_ldflags"',
     'CURL_CFLAGS="$CURL_CFLAGS" CURL_LIBS="$CURL_LIBS"',
+    '--with-iconv="$php_dependency_root"',
     'grep -F "$private_root" main/build-defs.h',
     'PHP build definitions contain a private $private_root_kind path',
     './configure --with-php-config="$build_php_config" --with-leveldb="$prefix"',

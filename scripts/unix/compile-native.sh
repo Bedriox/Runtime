@@ -83,6 +83,7 @@ cp -R -p -- "$zlib_source" "$zlib_work"
 	make install
 )
 make_install_autoconf gmp --enable-cxx
+make_install_autoconf libiconv
 
 openssl_source=$(source_path openssl)
 openssl_work="$build_root/build-openssl"
@@ -188,7 +189,7 @@ cp -R -p -- "$php_source" "$php_work"
 		--enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter \
 		--with-openssl --with-curl --with-zlib \
 		--with-zip --with-gmp --with-sodium \
-		--with-iconv --with-sqlite3 --with-pdo-sqlite --with-libxml
+		--with-iconv="$php_dependency_root" --with-sqlite3 --with-pdo-sqlite --with-libxml
 	for private_root_kind in build source repository download; do
 		case "$private_root_kind" in
 			build) private_root=$build_root ;;
@@ -353,7 +354,7 @@ mkdir -p -- "$artifact_root"
 package_parent="$build_root/package"
 mkdir -p -- "$package_parent"
 package_root="$package_parent/bin"
-source_ids='php,leveldb,php-leveldb,ca-bundle,libsodium,libxml2,oniguruma,zlib,gmp,curl,openssl,libzip,sqlite,zstd'
+source_ids='php,leveldb,php-leveldb,ca-bundle,libsodium,libxml2,oniguruma,zlib,gmp,libiconv,curl,openssl,libzip,sqlite,zstd'
 "$package_bin/php" -n "$repository_root/tools/package.php" \
 	--repository-root="$repository_root" \
 	--target="$target" \
