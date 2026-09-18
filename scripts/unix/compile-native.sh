@@ -107,7 +107,10 @@ make_install_cmake leveldb . \
 	-DLEVELDB_BUILD_TESTS=OFF -DLEVELDB_BUILD_BENCHMARKS=OFF -DLEVELDB_INSTALL=ON \
 	-DLEVELDB_SNAPPY=OFF -DLEVELDB_TCMALLOC=OFF -DLEVELDB_ZLIB=ON -DLEVELDB_ZSTD=ON
 grep -E '^ZLIB_LIBRARY[^=]*=.+' "$build_root/build-leveldb/CMakeCache.txt" | grep -qv 'NOTFOUND' || runtime_die "LevelDB did not resolve the pinned zlib build"
-grep -E '^zstd_DIR[^=]*=.+' "$build_root/build-leveldb/CMakeCache.txt" | grep -qv 'NOTFOUND' || runtime_die "LevelDB did not resolve the pinned zstd build"
+grep -Fx "zstd_LIBRARIES:FILEPATH=$prefix/lib/libzstd.a" "$build_root/build-leveldb/CMakeCache.txt" >/dev/null \
+	|| runtime_die "LevelDB did not resolve the pinned zstd library"
+grep -Fx "zstd_INCLUDE_DIRS:PATH=$prefix/include" "$build_root/build-leveldb/CMakeCache.txt" >/dev/null \
+	|| runtime_die "LevelDB did not resolve the pinned zstd headers"
 
 export PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$prefix/share/pkgconfig"
 export CPPFLAGS="-I$prefix/include"
