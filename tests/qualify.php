@@ -676,7 +676,9 @@ try {
         $configuredOpcodeCache = ini_get('opcache.file_cache');
         ensure($expectedOpcodeCache !== false, 'The external opcode cache directory is missing.');
         ensure(is_string($configuredOpcodeCache) && realpath($configuredOpcodeCache) === $expectedOpcodeCache, 'OPcache does not use the external runtime cache.');
-        ensure(ini_get('opcache.file_cache_fallback') === '1', 'Windows OPcache file-cache fallback is disabled.');
+        if (PHP_OS_FAMILY === 'Windows') {
+            ensure(ini_get('opcache.file_cache_fallback') === '1', 'Windows OPcache file-cache fallback is disabled.');
+        }
         ensure(class_exists(SQLite3::class) && class_exists(ZipArchive::class), 'Required extension classes are unavailable.');
     });
 
