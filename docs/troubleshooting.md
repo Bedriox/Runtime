@@ -21,6 +21,11 @@ Confirm `certs/cacert.pem` exists inside the package and that both
 disable certificate verification or point a release package at a private
 machine path.
 
+Confirm the launcher sets `OPENSSL_CONF` to the runtime's
+`config/openssl.cnf`. The file activates the built-in default provider and is
+part of the qualified package inventory; pointing at a system-wide OpenSSL
+configuration makes the runtime environment-dependent.
+
 ## LevelDB fails to load
 
 Check that the PHP extension ABI matches the packaged PHP build and that all

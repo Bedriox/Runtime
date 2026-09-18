@@ -18,7 +18,7 @@ $requiredFiles = [
     '.gitattributes', '.gitignore', 'AGENTS.md', 'CHANGELOG.md', 'CODE_OF_CONDUCT.md',
     'CONTRIBUTING.md', 'LICENSE', 'NOTICE', 'README.md', 'SECURITY.md',
     'THIRD_PARTY_NOTICES.md', 'compile.bat', 'compile.ps1', 'compile.sh',
-    'config/php.ini-production', 'fixtures/metadata.json',
+    'config/openssl.cnf', 'config/php.ini-production', 'fixtures/metadata.json',
     'fixtures/corpus/leveldb-corpus-v1.bin',
     'fixtures/data/leveldb-none-v1.tar',
     'fixtures/data/leveldb-raw-zlib-v1.tar',
@@ -116,6 +116,18 @@ if (is_file($iniPath) && ($ini = file_get_contents($iniPath)) !== false) {
     }
     if (preg_match('#(?:[A-Za-z]:[\\\\/]|/(?:Users|home|root)/)#i', $ini) === 1) {
         $errors[] = 'PHP configuration contains a private or absolute machine path.';
+    }
+}
+
+$opensslConfigurationPath = $root . '/config/openssl.cnf';
+if (is_file($opensslConfigurationPath) && ($opensslConfiguration = file_get_contents($opensslConfigurationPath)) !== false) {
+    foreach (['config_diagnostics = 1', 'openssl_conf = openssl_init', 'providers = providers', 'default = default_provider', 'activate = 1'] as $required) {
+        if (!str_contains($opensslConfiguration, $required)) {
+            $errors[] = sprintf('OpenSSL configuration is missing: %s', $required);
+        }
+    }
+    if (preg_match('#(?:[A-Za-z]:[\\\\/]|/(?:Users|home|root)/)#i', $opensslConfiguration) === 1) {
+        $errors[] = 'OpenSSL configuration contains a private or absolute machine path.';
     }
 }
 

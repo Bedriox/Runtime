@@ -66,6 +66,8 @@ try {
     packageTestEnsure(str_contains($ini, 'zend_extension = "${BEDRIOX_RUNTIME_ROOT}/ext/opcache.so"'), 'Shared OPcache was not enabled as a Zend extension.');
     packageTestEnsure(!str_contains($ini, '@BEDRIOX_DYNAMIC_EXTENSIONS@'), 'Dynamic extension marker survived rendering.');
     file_put_contents($package . DIRECTORY_SEPARATOR . 'php.ini', $ini);
+    mkdir($package . DIRECTORY_SEPARATOR . 'config');
+    file_put_contents($package . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf', "openssl_conf = openssl_init\n");
     file_put_contents($package . DIRECTORY_SEPARATOR . 'runtime-manifest.json', '{}');
     file_put_contents($package . DIRECTORY_SEPARATOR . 'artifact.sha256', 'excluded');
 
@@ -84,6 +86,7 @@ try {
     sort($sorted, SORT_STRING);
     packageTestEnsure($keys === $sorted, 'Inventory keys are not sorted.');
     packageTestEnsure(!isset($inventory['runtime-manifest.json']), 'Manifest inventoried itself.');
+    packageTestEnsure(isset($inventory['config/openssl.cnf']), 'Inventory omitted the packaged OpenSSL configuration.');
     packageTestEnsure(array_keys($inventory['php']) === ['bytes', 'sha256'], 'Inventory metadata shape is incorrect.');
 
     $windowsRuntime = $testParent . DIRECTORY_SEPARATOR . 'windows-runtime';

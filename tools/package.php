@@ -45,6 +45,7 @@ function qualificationEnvironment(string $runtimeRoot): array
         }
     }
     $environment['BEDRIOX_RUNTIME_ROOT'] = $runtimeRoot;
+    $environment['OPENSSL_CONF'] = $runtimeRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
     return $environment;
 }
 
@@ -114,7 +115,7 @@ try {
     }
     @chmod($executable, 0755);
 
-    foreach (['certs', 'licenses'] as $directory) {
+    foreach (['certs', 'config', 'licenses'] as $directory) {
         $path = $packageRoot . DIRECTORY_SEPARATOR . $directory;
         if (!is_dir($path) && !mkdir($path, 0755, false)) {
             throw new RuntimeException('Could not create package ' . $directory . ' directory.');
@@ -147,6 +148,10 @@ try {
     }
     if (!copy($caFile, $packageRoot . DIRECTORY_SEPARATOR . 'certs' . DIRECTORY_SEPARATOR . 'cacert.pem')) {
         throw new RuntimeException('Could not stage the pinned CA bundle.');
+    }
+    $opensslConfiguration = $repositoryRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    if (!is_file($opensslConfiguration) || !copy($opensslConfiguration, $packageRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf')) {
+        throw new RuntimeException('Could not stage the OpenSSL provider configuration.');
     }
     $sources = [];
     foreach ($sourceIds as $sourceId) {
@@ -272,6 +277,7 @@ try {
     $probe = $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'relocation-probe.php';
     $relocatedEnvironment = $environment;
     $relocatedEnvironment['BEDRIOX_RUNTIME_ROOT'] = $relocationRoot;
+    $relocatedEnvironment['OPENSSL_CONF'] = $relocationRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
     [$probeStatus, $probeOutput, $probeError] = run([
         $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
     ], $relocatedEnvironment);
@@ -299,6 +305,24 @@ try {
     ], $wrongEnvironment);
     if ($wrongStatus === 0 || !str_contains($wrongError, 'BEDRIOX_RUNTIME_ROOT')) {
         throw new RuntimeException('Relocated runtime did not fail closed with the wrong BEDRIOX_RUNTIME_ROOT.');
+    }
+
+    $unsetOpenSslEnvironment = $relocatedEnvironment;
+    unset($unsetOpenSslEnvironment['OPENSSL_CONF']);
+    [$unsetOpenSslStatus, , $unsetOpenSslError] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $unsetOpenSslEnvironment);
+    if ($unsetOpenSslStatus === 0 || !str_contains($unsetOpenSslError, 'OPENSSL_CONF')) {
+        throw new RuntimeException('Relocated runtime did not fail closed when OPENSSL_CONF was unset.');
+    }
+
+    $wrongOpenSslEnvironment = $relocatedEnvironment;
+    $wrongOpenSslEnvironment['OPENSSL_CONF'] = $wrongRoot . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    [$wrongOpenSslStatus, , $wrongOpenSslError] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $wrongOpenSslEnvironment);
+    if ($wrongOpenSslStatus === 0 || !str_contains($wrongOpenSslError, 'OPENSSL_CONF')) {
+        throw new RuntimeException('Relocated runtime did not fail closed with the wrong OPENSSL_CONF.');
     }
 
     [$relocatedStatus, $relocatedOutput, $relocatedError] = run([

@@ -39,8 +39,10 @@ Every target artifact must execute tests for:
 5. ZIP creation and extraction.
 6. GMP arithmetic.
 7. UDP loopback sockets.
-8. OpenSSL and cURL through their bundled default-ini CA configuration; cURL
-   qualification does not inject a per-request CA path.
+8. OpenSSL and cURL through their bundled default-ini CA configuration, plus
+   P-384 key creation and ES384 verification through the default provider activated
+   by the packaged relocatable `config/openssl.cnf`; cURL qualification does
+   not inject a per-request CA path.
 9. Deterministic cURL and OpenSSL rejection of an ephemeral local self-signed
    certificate, plus real-network public-chain acceptance and certificate and
    hostname rejection by both clients. Negative network evidence must identify a
@@ -50,8 +52,8 @@ Every target artifact must execute tests for:
     raw-zlib, and zstd fixtures.
 11. Clean extraction of the finished archive to a different absolute directory
     containing spaces, followed by execution with the relocated PHP and ini.
-    Missing or incorrect `BEDRIOX_RUNTIME_ROOT` values must fail the relocation
-    probe.
+    Missing or incorrect `BEDRIOX_RUNTIME_ROOT` or `OPENSSL_CONF` values must
+    fail the relocation probe.
 12. Exact package and archive contents, licenses, manifest, and checksums. The
     archive checksum is an adjacent sidecar and is not part of `bin` or the
     archive itself.

@@ -1,0 +1,14 @@
+# Bedriox Runtime OpenSSL configuration.
+# Keep this file relocatable: it must not name a build or installation path.
+
+config_diagnostics = 1
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = providers
+
+[providers]
+default = default_provider
+
+[default_provider]
+activate = 1

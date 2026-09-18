@@ -158,6 +158,7 @@ function validatePackage(string $root): void
     foreach ([
         'php.ini',
         'certs/cacert.pem',
+        'config/openssl.cnf',
         'runtime-manifest.json',
         'NOTICE',
         'THIRD_PARTY_NOTICES.md',
@@ -746,6 +747,32 @@ try {
         $contents = readFileStrict($opensslCa);
         ensure(str_contains($contents, '-----BEGIN CERTIFICATE-----') && strlen($contents) > 100_000, 'CA bundle is missing or implausibly small.');
         ensure(openssl_x509_read($contents) !== false, 'OpenSSL could not parse the first certificate in the CA bundle.');
+    });
+
+    $qualification->run('relocatable OpenSSL provider configuration', static function () use ($resolvedPackageRoot): void {
+        $expectedConfiguration = realpath($resolvedPackageRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf');
+        $activeConfiguration = getenv('OPENSSL_CONF');
+        ensure($expectedConfiguration !== false, 'Packaged OpenSSL configuration is missing.');
+        ensure(is_string($activeConfiguration) && $activeConfiguration !== '', 'OPENSSL_CONF is not configured.');
+        ensure(realpath($activeConfiguration) === $expectedConfiguration, 'OPENSSL_CONF does not resolve inside the active runtime package.');
+
+        $configuration = readFileStrict($expectedConfiguration);
+        ensure(!preg_match('#(?:[A-Za-z]:[\\\\/]|/(?:Users|home|root|workspace|build|private|tmp)/)#i', $configuration), 'OpenSSL configuration contains an absolute build or private path.');
+        foreach (['config_diagnostics = 1', 'openssl_conf = openssl_init', 'providers = providers', 'default = default_provider', 'activate = 1'] as $required) {
+            ensure(str_contains($configuration, $required), 'OpenSSL configuration is missing: ' . $required);
+        }
+
+        $key = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name' => 'secp384r1',
+        ]);
+        ensure($key instanceof OpenSSLAsymmetricKey, 'The configured default provider could not create a Bedrock P-384 key.');
+        $payload = 'bedriox-bedrock-handshake-witness';
+        $signature = '';
+        ensure(openssl_sign($payload, $signature, $key, OPENSSL_ALGO_SHA384), 'The configured default provider could not create an ES384 signature.');
+        $details = openssl_pkey_get_details($key);
+        ensure(is_array($details) && is_string($details['key'] ?? null), 'The configured default provider could not export the P-384 public key.');
+        ensure(openssl_verify($payload, $signature, $details['key'], OPENSSL_ALGO_SHA384) === 1, 'The configured default provider could not verify an ES384 signature.');
     });
 
     $qualification->run('local untrusted TLS certificate rejection through default ini', static function () use ($temporaryRoot): void {

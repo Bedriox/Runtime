@@ -158,9 +158,11 @@ changing build state.
 Native compilation writes into an isolated invocation directory. A shared
 finalizer then creates `package/bin`, copies the pinned CA bundle and only the
 licenses associated with that target's exact source closure, and renders
-`php.ini` from `config/php.ini-production`. Launchers set
-`BEDRIOX_RUNTIME_ROOT` to the absolute `bin` directory at runtime; the
-configuration contains no build-machine paths.
+`php.ini` from `config/php.ini-production`. It also packages the relocatable
+`config/openssl.cnf`, which explicitly activates OpenSSL's built-in default
+provider. Launchers set `BEDRIOX_RUNTIME_ROOT` to the absolute `bin` directory
+and `OPENSSL_CONF` to that packaged file at runtime; neither configuration
+contains build-machine paths.
 
 The finalizer detects modules actually emitted into `bin/ext`. It writes load
 directives only for those shared modules, so extensions compiled statically are
@@ -169,7 +171,8 @@ PHP executable and configuration. It then builds a temporary archive, compares
 every archived path, byte count, and SHA-256 to the qualified package, and
 extracts it into a clean path containing spaces. The extracted PHP must execute
 with its relocated configuration; unset or incorrect `BEDRIOX_RUNTIME_ROOT`
-values fail closed. Unix tar packages also preserve an executable `bin/php`.
+or `OPENSSL_CONF` values fail closed. Unix tar packages also preserve an
+executable `bin/php`.
 Only after these checks pass is the archive published and its adjacent
 `.sha256` sidecar written. Checksum sidecars are never stored inside `bin` or
 inside the archive. If another target supplies an allowed runtime file through

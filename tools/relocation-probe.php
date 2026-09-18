@@ -27,6 +27,17 @@ try {
         throw new RuntimeException('The relocated php.ini is not loaded.');
     }
 
+    $opensslConfiguration = getenv('OPENSSL_CONF');
+    $expectedOpenSslConfiguration = realpath($expected . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf');
+    if (
+        !is_string($opensslConfiguration)
+        || $opensslConfiguration === ''
+        || $expectedOpenSslConfiguration === false
+        || realpath($opensslConfiguration) !== $expectedOpenSslConfiguration
+    ) {
+        throw new RuntimeException('OPENSSL_CONF must resolve inside the relocated package.');
+    }
+
     $normalizePath = static function (string $path): string {
         $normalized = rtrim(str_replace('\\', '/', $path), '/');
         return PHP_OS_FAMILY === 'Windows' ? strtolower($normalized) : $normalized;

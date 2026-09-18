@@ -31,10 +31,11 @@ database implementation can read and write the required compression formats.
 ## Package contract
 
 Packages are relocatable and do not contain a build-machine path. `php.ini`
-resolves extensions and `certs/cacert.pem` within the package. A generated
-schema-2 manifest records the target, architecture, PHP version, thread-safety
-choice, extension ABI, source revisions, compiler, build flags, and packaged
-file hashes.
+resolves extensions and `certs/cacert.pem` within the package, while the
+launcher points `OPENSSL_CONF` at the packaged relocatable provider
+configuration. A generated schema-2 manifest records the target, architecture,
+PHP version, thread-safety choice, extension ABI, source revisions, compiler,
+build flags, and packaged file hashes.
 
 The runtime never installs globally, changes `PATH`, updates a certificate
 store, or removes another PHP installation.

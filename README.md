@@ -92,6 +92,7 @@ bin/
 |-- ext/
 |-- lib/
 |-- certs/cacert.pem
+|-- config/openssl.cnf
 |-- licenses/
 `-- runtime-manifest.json
 ```
