@@ -39,7 +39,7 @@ make_install_autoconf() {
 	shift
 	source=$(source_path "$id")
 	work="$build_root/build-$id"
-	cp -R -- "$source" "$work"
+	cp -R -p -- "$source" "$work"
 	(
 		cd "$work"
 		[ -x ./configure ] || autoreconf -fi
@@ -67,7 +67,7 @@ make_install_cmake() {
 
 zlib_source=$(source_path zlib)
 zlib_work="$build_root/build-zlib"
-cp -R -- "$zlib_source" "$zlib_work"
+cp -R -p -- "$zlib_source" "$zlib_work"
 (
 	cd "$zlib_work"
 	CFLAGS="-O2 -fPIC" ./configure --prefix="$prefix" --static
@@ -78,7 +78,7 @@ make_install_autoconf gmp --enable-cxx
 
 openssl_source=$(source_path openssl)
 openssl_work="$build_root/build-openssl"
-cp -R -- "$openssl_source" "$openssl_work"
+cp -R -p -- "$openssl_source" "$openssl_work"
 case "$target" in
 	linux-x86_64) openssl_target=linux-x86_64 ;;
 	linux-arm64) openssl_target=linux-aarch64 ;;
@@ -116,7 +116,7 @@ make_install_autoconf curl --with-openssl="$prefix" --with-zlib="$prefix" --with
 
 php_source=$(source_path php)
 php_work="$build_root/build-php"
-cp -R -- "$php_source" "$php_work"
+cp -R -p -- "$php_source" "$php_work"
 (
 	cd "$php_work"
 	./configure --prefix="$install_root" \
@@ -134,7 +134,7 @@ cp -R -- "$php_source" "$php_work"
 
 leveldb_extension_source=$(source_path php-leveldb)
 leveldb_extension_work="$build_root/build-php-leveldb"
-cp -R -- "$leveldb_extension_source" "$leveldb_extension_work"
+cp -R -p -- "$leveldb_extension_source" "$leveldb_extension_work"
 (
 	cd "$leveldb_extension_work"
 	"$package_bin/phpize"
