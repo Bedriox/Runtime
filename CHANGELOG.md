@@ -21,3 +21,5 @@
   PHP development launchers from the relocatable package contract.
 - Neutralized OpenSSL's compiled configuration, engine, and provider-module
   directories while keeping build-only discovery inside the isolated stage.
+- Kept the private Unix dependency prefix out of PHP's recorded configure
+  command while retaining isolated compiler and pkg-config discovery.

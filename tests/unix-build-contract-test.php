@@ -49,6 +49,17 @@ foreach (['phpize', 'php-config', 'phar.phar'] as $developmentFile) {
     );
 }
 
+$phpBlockStart = strpos($compiler, 'php_source=$(source_path php)');
+$phpBlockEnd = strpos($compiler, 'leveldb_extension_source=$(source_path php-leveldb)');
+unixBuildEnsure($phpBlockStart !== false && $phpBlockEnd !== false && $phpBlockEnd > $phpBlockStart, 'PHP build block could not be isolated.');
+$phpBuildBlock = substr($compiler, $phpBlockStart, $phpBlockEnd - $phpBlockStart);
+foreach (['--with-openssl="$prefix"', '--with-curl="$prefix"', '--with-zlib="$prefix"', '--with-gmp="$prefix"', '--with-sodium="$prefix"', '--with-sqlite3="$prefix"', '--with-pdo-sqlite="$prefix"'] as $privateConfigureArgument) {
+    unixBuildEnsure(
+        !str_contains($phpBuildBlock, $privateConfigureArgument),
+        'PHP configure command exposes the private dependency prefix: ' . $privateConfigureArgument,
+    );
+}
+
 foreach (['runtime_require_command readelf', 'runtime_require_command strings', 'xcrun --find otool', 'xcrun --find strings'] as $required) {
     unixBuildEnsure(str_contains($preflight, $required), 'Unix preflight is missing inspection tool: ' . $required);
 }

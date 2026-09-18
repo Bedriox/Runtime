@@ -163,9 +163,9 @@ cp -R -p -- "$php_source" "$php_work"
 		--enable-ctype --enable-dom --enable-fileinfo --enable-mbstring --enable-opcache \
 		--enable-pcntl --enable-pdo --enable-posix --enable-session --enable-simplexml \
 		--enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter \
-		--with-openssl="$prefix" --with-curl="$prefix" --with-zlib="$prefix" \
-		--with-zip --with-gmp="$prefix" --with-sodium="$prefix" \
-		--with-iconv --with-sqlite3="$prefix" --with-pdo-sqlite="$prefix" --with-libxml
+		--with-openssl --with-curl --with-zlib \
+		--with-zip --with-gmp --with-sodium \
+		--with-iconv --with-sqlite3 --with-pdo-sqlite --with-libxml
 	extra_libs=$(sed -n 's/^EXTRA_LIBS = //p' Makefile)
 	case "${extra_libs##*-lzip}" in
 		*'-lzstd'*) ;;

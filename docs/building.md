@@ -100,7 +100,9 @@ binary string inspection, fail the build if an RPATH or private invocation,
 source, download, or workspace path survives. OpenSSL uses the same neutral
 prefix for its compiled configuration, engine, and provider-module directories;
 only its build-time pkg-config metadata is relocated to the isolated dependency
-stage.
+stage. PHP dependency discovery uses the isolated compiler and pkg-config
+environment without placing that private prefix in PHP's recorded configure
+command.
 
 ## Output roots
 
