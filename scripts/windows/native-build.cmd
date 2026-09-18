@@ -84,8 +84,10 @@ xcopy "%LEVELDB_EXTENSION_SOURCE%\*" "%PHP_SOURCE%\ext\leveldb\" /E /I /Q /Y >nu
 pushd "%PHP_SOURCE%" || exit /b 36
 call buildconf.bat --force || (popd & exit /b 37)
 set "PHP_CONFIGURE_LOG=%WORK_ROOT%\php-configure.log"
-call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix=bedriox-runtime --with-config-file-path=bedriox-runtime --with-php-build="%PHP_BUILD%" --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%" > "%PHP_CONFIGURE_LOG%" 2>&1 || (type "%PHP_CONFIGURE_LOG%" & popd & exit /b 38)
+call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix=bedriox-runtime --with-config-file-path=bedriox-runtime --with-php-build="%PHP_BUILD%" --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%" > "%PHP_CONFIGURE_LOG%" 2>&1
+set "PHP_CONFIGURE_EXIT=%ERRORLEVEL%"
 type "%PHP_CONFIGURE_LOG%"
+if not "%PHP_CONFIGURE_EXIT%"=="0" (popd & exit /b 38)
 findstr /I /C:"not enabled" /C:"can't be enabled" "%PHP_CONFIGURE_LOG%" >nul && (popd & exit /b 77)
 nmake || (popd & exit /b 39)
 nmake snap || (popd & exit /b 40)

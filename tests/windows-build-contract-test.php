@@ -46,6 +46,7 @@ windowsBuildEnsure(str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP
 windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
 windowsBuildEnsure(str_contains($driver, '/C:"not enabled" /C:"can\'t be enabled"'), 'Windows configure warnings for missing requested features are not fatal.');
+windowsBuildEnsure(str_contains($driver, 'set "PHP_CONFIGURE_EXIT=%ERRORLEVEL%"'), 'Windows configure failures do not preserve their exit status before printing diagnostics.');
 windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
 windowsBuildEnsure(
     preg_match('/phpsdk-vs17-\{0\}\.bat/', $orchestrator) === 1,
