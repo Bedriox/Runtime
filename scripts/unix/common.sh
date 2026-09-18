@@ -37,6 +37,28 @@ runtime_require_command() {
 	command -v "$1" >/dev/null 2>&1 || runtime_die "required command not found: $1"
 }
 
+runtime_archive_links_are_safe() {
+	archive=$1
+
+	# Hard links are unnecessary for the pinned inputs. Symlinks are accepted only
+	# when they name a sibling entry, which cannot traverse outside the directory
+	# containing the link during extraction.
+	tar -tvf "$archive" | awk '
+		$1 ~ /^h/ { exit 1 }
+		$1 ~ /^l/ {
+			separator = " -> "
+			position = index($0, separator)
+			if (position == 0) {
+				exit 1
+			}
+			target = substr($0, position + length(separator))
+			if (target !~ /^[A-Za-z0-9][A-Za-z0-9._+-]*$/) {
+				exit 1
+			}
+		}
+	'
+}
+
 runtime_assert_safe_root() {
 	root_name=$1
 	root_path=$2

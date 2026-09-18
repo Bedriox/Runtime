@@ -37,6 +37,11 @@ jobs:
         run: |
           bash -n compile.sh
           find scripts/unix -type f -name '*.sh' -print0 | sort -z | xargs -0 -r -n1 bash -n
+          find tests -type f -name '*.sh' -print0 | sort -z | xargs -0 -r -n1 bash -n
+
+      - name: Test archive safety policy
+        shell: bash
+        run: ./tests/archive-safety-test.sh
 
       - name: Validate repository metadata
         run: php tools/validate.php

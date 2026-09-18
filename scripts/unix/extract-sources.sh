@@ -51,9 +51,7 @@ for source_id in $source_ids; do
 		/(^|\/)\.\.($|\/)/ { bad = 1 }
 		END { exit bad }
 	' || runtime_die "archive contains an escaping path: $source_id"
-	if tar -tvf "$archive" | awk '$1 ~ /^[lh]/ { found = 1 } END { exit found ? 0 : 1 }'; then
-		runtime_die "archive links are not accepted: $source_id"
-	fi
+	runtime_archive_links_are_safe "$archive" || runtime_die "archive contains an unsafe link: $source_id"
 
 	temporary="$source_root/.extract-$source_id-$$"
 	runtime_assert_safe_root "temporary extraction" "$temporary"
