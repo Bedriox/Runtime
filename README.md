@@ -99,6 +99,8 @@ bin/
 Bedriox startup scripts use this runtime explicitly. Runtime does not replace a
 system PHP installation or modify the system certificate store.
 
+Project information and releases are available at [bedriox.com](https://bedriox.com).
+
 ## Third-party foundation
 
 Bedriox Runtime uses the Bedrock-compatible
