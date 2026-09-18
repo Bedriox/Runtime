@@ -276,12 +276,14 @@ function qualifyLevelDb(string $temporaryRoot): void
     [$status, $stdout, $stderr] = runProcess(phpCommand([$helper, $path]));
     ensure($status === 0, 'LevelDB did not enforce its process lock: ' . trim($stdout . ' ' . $stderr));
 
-    $database->close();
+    unset($database);
+    gc_collect_cycles();
     $database = new LevelDB($path, ['create_if_missing' => false]);
     ensure($database->get('batch-a') === 'one', 'LevelDB value did not survive close and reopen.');
     $database->delete('batch-a', ['sync' => true]);
     ensure($database->get('batch-a') === false, 'LevelDB delete failed after reopen.');
-    $database->close();
+    unset($database);
+    gc_collect_cycles();
 
     foreach ([
         'raw-zlib' => constant('LEVELDB_ZLIB_RAW_COMPRESSION'),
@@ -295,10 +297,12 @@ function qualifyLevelDb(string $temporaryRoot): void
         ]);
         $value = str_repeat('Bedriox-' . $name . '-', 16_384);
         $database->put('compressed', $value, ['sync' => true]);
-        $database->close();
+        unset($database);
+        gc_collect_cycles();
         $database = new LevelDB($compressedPath, ['create_if_missing' => false]);
         ensure($database->get('compressed') === $value, 'LevelDB ' . $name . ' value did not survive reopen.');
-        $database->close();
+        unset($database);
+        gc_collect_cycles();
     }
 }
 
@@ -488,7 +492,7 @@ INI;
         }
         ensure(is_file($readyPath), 'Local TLS witness did not become ready.');
         ensureOpenSslRejected('127.0.0.1', $port, 'localhost', 'certificate');
-        ensureCurlRejected('https://127.0.0.1:' . $port . '/', 'certificate');
+        ensureCurlRejected('https://localhost:' . $port . '/', 'certificate');
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);
         fclose($pipes[1]);
