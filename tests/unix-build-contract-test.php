@@ -23,6 +23,12 @@ foreach ([
     'runtime_prefix=/opt/bedriox-runtime',
     'make install INSTALL_ROOT="$install_stage"',
     'make_install_autoconf libiconv',
+    'autoreconf -fi',
+    '--disable-shared --enable-static --enable-cxx --with-pic $gmp_platform_flags',
+    "linux-x86_64) gmp_platform_flags='--build=x86_64-linux-gnu --enable-fat'",
+    "macos-x86_64) gmp_platform_flags='--build=x86_64-apple-darwin --enable-fat'",
+    'make -j"$jobs" check',
+    'installed GMP failed its static consumer probe',
     '-g0',
     '-ffile-prefix-map=',
     '-fdebug-prefix-map=',
@@ -53,10 +59,12 @@ foreach ([
     "php_platform_ldflags='-framework CoreFoundation -framework CoreServices -framework SystemConfiguration'",
     'PKG_CONFIG_PATH="$php_pkg_config_path" CPPFLAGS="-I$php_dependency_root/include" LDFLAGS="-L$php_dependency_root/lib $php_platform_ldflags"',
     'CURL_CFLAGS="$CURL_CFLAGS" CURL_LIBS="$CURL_LIBS"',
+    'GMP_CFLAGS="$GMP_CFLAGS" GMP_LIBS="$GMP_LIBS"',
     '--with-iconv="$php_dependency_root"',
     'grep -F "$private_root" main/build-defs.h',
     'PHP build definitions contain a private $private_root_kind path',
     'sanitized PHP build-definition witness:',
+    'sanitized PHP configure diagnostic:',
     './configure --with-php-config="$build_php_config" --with-leveldb="$prefix"',
     'leveldb_link_closure="$prefix/lib/libleveldb.a $prefix/lib/libzstd.a $prefix/lib/libz.a $leveldb_cxx_runtime"',
     'make -j"$jobs" LEVELDB_SHARED_LIBADD="$leveldb_link_closure"',
@@ -78,6 +86,14 @@ foreach ([
 ] as $required) {
     unixBuildEnsure(str_contains($compiler, $required), 'Unix native build is missing hardening contract: ' . $required);
 }
+
+$gmpBlockStart = strpos($compiler, 'gmp_source=$(source_path gmp)');
+$gmpBlockEnd = strpos($compiler, 'make_install_autoconf libiconv');
+unixBuildEnsure($gmpBlockStart !== false && $gmpBlockEnd !== false, 'Dedicated GMP build policy could not be isolated.');
+$gmpBuildBlock = substr($compiler, $gmpBlockStart, $gmpBlockEnd - $gmpBlockStart);
+unixBuildEnsure(str_contains($gmpBuildBlock, 'autoreconf -fi'), 'GMP does not refresh its stale bundled libtool rules.');
+unixBuildEnsure(str_contains($gmpBuildBlock, 'make -j"$jobs" check'), 'GMP does not pass its upstream test suite before installation.');
+unixBuildEnsure(str_contains($gmpBuildBlock, '"$prefix/lib/libgmp.a"'), 'GMP does not test its exact installed static archive.');
 
 $opensslBlockStart = strpos($compiler, 'openssl_source=$(source_path openssl)');
 $opensslBlockEnd = strpos($compiler, 'openssl_install_root=');

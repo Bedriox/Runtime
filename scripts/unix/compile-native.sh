@@ -82,7 +82,41 @@ cp -R -p -- "$zlib_source" "$zlib_work"
 	make -j"$jobs"
 	make install
 )
-make_install_autoconf gmp --enable-cxx
+gmp_source=$(source_path gmp)
+gmp_work="$build_root/build-gmp"
+cp -R -p -- "$gmp_source" "$gmp_work"
+case "$target" in
+	linux-x86_64) gmp_platform_flags='--build=x86_64-linux-gnu --enable-fat' ;;
+	linux-arm64) gmp_platform_flags='--build=aarch64-linux-gnu' ;;
+	macos-x86_64) gmp_platform_flags='--build=x86_64-apple-darwin --enable-fat' ;;
+	macos-arm64) gmp_platform_flags='--build=aarch64-apple-darwin' ;;
+esac
+(
+	cd "$gmp_work"
+	# GMP 6.3.0 bundles libtool 2.4.6, whose flat-namespace rules are broken
+	# on current Intel macOS linkers. Regenerate with the required host tools.
+	autoreconf -fi
+	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" ./configure \
+		--prefix="$prefix" --disable-shared --enable-static --enable-cxx --with-pic $gmp_platform_flags
+	make -j"$jobs"
+	make -j"$jobs" check
+	make install
+)
+gmp_probe_source="$build_root/gmp-link-probe.c"
+gmp_probe_binary="$build_root/gmp-link-probe"
+printf '%s\n' \
+	'#include <gmp.h>' \
+	'#include <stdlib.h>' \
+	'int main(void) {' \
+	'    mpz_t root, remainder, value;' \
+	'    mpz_inits(root, remainder, value, NULL);' \
+	'    mpz_set_ui(value, 16);' \
+	'    int exact = mpz_rootrem(root, remainder, value, 2);' \
+	'    mpz_clears(root, remainder, value, NULL);' \
+	'    return exact == 1 ? 0 : 1;' \
+	'}' > "$gmp_probe_source"
+cc $runtime_cflags -I"$prefix/include" "$gmp_probe_source" "$prefix/lib/libgmp.a" -o "$gmp_probe_binary"
+"$gmp_probe_binary" || runtime_die "installed GMP failed its static consumer probe"
 make_install_autoconf libiconv
 
 openssl_source=$(source_path openssl)
@@ -178,6 +212,8 @@ cp -R -p -- "$php_source" "$php_work"
 		--static --libs libcurl)
 	CURL_CFLAGS=$(php -n -r 'echo str_replace($argv[2], $argv[3], $argv[1]);' -- "$CURL_CFLAGS" "$prefix" "$php_dependency_root")
 	CURL_LIBS=$(php -n -r 'echo str_replace($argv[2], $argv[3], $argv[1]);' -- "$CURL_LIBS" "$prefix" "$php_dependency_root")
+	GMP_CFLAGS="-I$php_dependency_root/include"
+	GMP_LIBS="-L$php_dependency_root/lib -lgmp"
 	case "$CURL_CFLAGS $CURL_LIBS" in
 		*"$prefix"*) runtime_die "relocated libcurl flags retain the private dependency prefix" ;;
 	esac
@@ -193,9 +229,10 @@ cp -R -p -- "$php_source" "$php_work"
 			php_platform_ldflags='-framework CoreFoundation -framework CoreServices -framework SystemConfiguration'
 			;;
 	esac
-	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" \
+	if ! CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" \
 		PKG_CONFIG_PATH="$php_pkg_config_path" CPPFLAGS="-I$php_dependency_root/include" LDFLAGS="-L$php_dependency_root/lib $php_platform_ldflags" \
 		LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" CURL_CFLAGS="$CURL_CFLAGS" CURL_LIBS="$CURL_LIBS" \
+		GMP_CFLAGS="$GMP_CFLAGS" GMP_LIBS="$GMP_LIBS" \
 		./configure --prefix="$runtime_prefix" --disable-rpath \
 		--with-config-file-path=. \
 		--disable-all --disable-cgi --disable-phpdbg --enable-cli --enable-phar --enable-filter \
@@ -204,7 +241,33 @@ cp -R -p -- "$php_source" "$php_work"
 		--enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter \
 		--with-openssl --with-curl --with-zlib \
 		--with-zip --with-gmp --with-sodium \
-		--with-iconv="$php_dependency_root" --with-sqlite3 --with-pdo-sqlite --with-libxml
+		--with-iconv="$php_dependency_root" --with-sqlite3 --with-pdo-sqlite --with-libxml; then
+		php -n -r '
+$lines = file($argv[1], FILE_IGNORE_NEW_LINES);
+if ($lines === false) {
+    fwrite(STDERR, "PHP configure failed; config.log could not be read.\n");
+    exit;
+}
+$match = null;
+foreach ($lines as $index => $line) {
+    if (str_contains($line, "__gmpz_rootrem")) {
+        $match = $index;
+    }
+}
+$start = $match === null ? max(0, count($lines) - 30) : max(0, $match - 12);
+$end = $match === null ? count($lines) : min(count($lines), $match + 13);
+$roots = array_slice($argv, 2);
+fwrite(STDERR, "sanitized PHP configure diagnostic:\n");
+for ($index = $start; $index < $end; ++$index) {
+    $line = $lines[$index];
+    foreach ($roots as $rootIndex => $root) {
+        $line = str_replace($root, "<private-" . ["build", "source", "repository", "download"][$rootIndex] . "-root>", $line);
+    }
+    fwrite(STDERR, substr($line, 0, 1024) . "\n");
+}
+' config.log "$build_root" "$source_root" "$repository_root" "$download_root"
+		runtime_die "PHP configuration failed"
+	fi
 	for private_root_kind in build source repository download; do
 		case "$private_root_kind" in
 			build) private_root=$build_root ;;
