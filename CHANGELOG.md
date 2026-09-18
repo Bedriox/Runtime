@@ -7,6 +7,7 @@
 - The Unix LevelDB extension removes its configure-generated private RUNPATH while retaining the complete static dependency link closure.
 - Windows native builds avoid PowerShell's reserved pipeline-input variable when handling verified archives and streams.
 - Windows PHP configuration now uses the verified SDK dependency root, and packaging includes only required signed Visual C++ runtime imports from the active VS17 directory.
+- Windows PHP enables the pinned iconv dependency required by libxml.
 
 - Established the Runtime build, dependency, packaging, qualification, and
   release foundation for PHP 8.4.

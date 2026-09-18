@@ -83,7 +83,7 @@ xcopy "%LEVELDB_EXTENSION_SOURCE%\*" "%PHP_SOURCE%\ext\leveldb\" /E /I /Q /Y >nu
 
 pushd "%PHP_SOURCE%" || exit /b 36
 call buildconf.bat --force || (popd & exit /b 37)
-call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix=bedriox-runtime --with-config-file-path=bedriox-runtime --with-php-build="%PHP_BUILD%" --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%"
+call configure.bat --disable-all --enable-cli --enable-ctype --enable-dom --enable-fileinfo --enable-filter --enable-hash --enable-json --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --enable-simplexml --enable-sockets --enable-tokenizer --enable-xml --enable-xmlreader --enable-xmlwriter --with-prefix=bedriox-runtime --with-config-file-path=bedriox-runtime --with-php-build="%PHP_BUILD%" --with-iconv --with-libxml --with-openssl --with-curl --with-zlib --with-zip --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared,"%PHP_BUILD%"
 if errorlevel 1 (popd & exit /b 38)
 nmake || (popd & exit /b 39)
 nmake snap || (popd & exit /b 40)

@@ -60,6 +60,7 @@ windowsBuildEnsure(
 );
 windowsBuildEnsure(str_contains($driver, '--with-prefix=bedriox-runtime'), 'Windows PHP prefix is not neutral.');
 windowsBuildEnsure(str_contains($driver, '--with-config-file-path=bedriox-runtime'), 'Windows PHP configuration path is not neutral.');
+windowsBuildEnsure(str_contains($driver, '--with-iconv --with-libxml'), 'Windows PHP does not enable the pinned iconv prerequisite before libxml.');
 windowsBuildEnsure(str_contains($driver, 'if errorlevel 1 (popd & exit /b 38)'), 'Windows PHP configure failures are not propagated.');
 windowsBuildEnsure(str_contains($driver, 'nmake snap'), 'Windows does not produce the upstream runtime snapshot.');
 windowsBuildEnsure(!str_contains($driver, 'nmake install'), 'Windows still installs the complete PHP development tree.');
