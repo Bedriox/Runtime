@@ -161,9 +161,13 @@ cp -R -p -- "$php_source" "$php_work"
 	# This keeps compression dependencies after libzip on one-pass Unix linkers.
 	LIBZIP_CFLAGS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --cflags libzip)
 	LIBZIP_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libzip)
+	# Static libcurl needs its complete private dependency closure. On macOS
+	# this includes the platform frameworks required by curl_easy_perform().
+	CURL_CFLAGS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --cflags libcurl)
+	CURL_LIBS=$(PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libcurl)
 	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" \
 		PKG_CONFIG_PATH="$php_pkg_config_path" CPPFLAGS="-I$php_dependency_root/include" LDFLAGS="-L$php_dependency_root/lib" \
-		LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" \
+		LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" CURL_CFLAGS="$CURL_CFLAGS" CURL_LIBS="$CURL_LIBS" \
 		./configure --prefix="$runtime_prefix" --disable-rpath \
 		--with-config-file-path=. \
 		--disable-all --disable-cgi --disable-phpdbg --enable-cli --enable-phar --enable-filter \
