@@ -6,6 +6,7 @@
 - Preserve static libcurl's complete library and macOS framework closure during Unix PHP configuration.
 - Build Unix iconv support from the pinned GNU libiconv source.
 - Keep libcurl's generated include and library directories out of PHP build metadata.
+- Normalize absolute directories emitted by libcurl's transitive pkg-config dependencies.
 - Sanitized Unix native-build path diagnostics now identify the embedded-path producer without exposing private runner directories.
 - PHP is configured through neutral relative dependency paths, preventing private build locations from entering its compiled build metadata.
 - The Unix LevelDB extension removes its configure-generated private RUNPATH while retaining the complete static dependency link closure.

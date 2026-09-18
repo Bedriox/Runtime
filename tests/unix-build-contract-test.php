@@ -43,6 +43,8 @@ foreach ([
     'PKG_CONFIG_PATH="$php_pkg_config_path" pkg-config --define-variable=prefix="$php_dependency_root" --static --libs libzip',
     '--define-variable=libdir="$php_dependency_root/lib" --define-variable=includedir="$php_dependency_root/include"',
     '--static --libs libcurl',
+    'str_replace($argv[2], $argv[3], $argv[1])',
+    'relocated libcurl flags retain the private dependency prefix',
     'for framework in CoreFoundation CoreServices SystemConfiguration',
     'pinned macOS libcurl metadata omits framework: $framework',
     "php_platform_ldflags='-framework CoreFoundation -framework CoreServices -framework SystemConfiguration'",

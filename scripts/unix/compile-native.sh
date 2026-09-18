@@ -172,6 +172,11 @@ cp -R -p -- "$php_source" "$php_work"
 		--define-variable=prefix="$php_dependency_root" --define-variable=exec_prefix="$php_dependency_root" \
 		--define-variable=libdir="$php_dependency_root/lib" --define-variable=includedir="$php_dependency_root/include" \
 		--static --libs libcurl)
+	CURL_CFLAGS=$(php -n -r 'echo str_replace($argv[2], $argv[3], $argv[1]);' "$CURL_CFLAGS" "$prefix" "$php_dependency_root")
+	CURL_LIBS=$(php -n -r 'echo str_replace($argv[2], $argv[3], $argv[1]);' "$CURL_LIBS" "$prefix" "$php_dependency_root")
+	case "$CURL_CFLAGS $CURL_LIBS" in
+		*"$prefix"*) runtime_die "relocated libcurl flags retain the private dependency prefix" ;;
+	esac
 	php_platform_ldflags=
 	case "$target" in
 		macos-*)
