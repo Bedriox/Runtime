@@ -172,7 +172,8 @@ cp -R -p -- "$php_source" "$php_work"
 				case " $CURL_LIBS " in
 					*" -framework $framework "*) ;;
 					*) runtime_die "pinned macOS libcurl metadata omits framework: $framework" ;;
-				done
+				esac
+			done
 			php_platform_ldflags='-framework CoreFoundation -framework CoreServices -framework SystemConfiguration'
 			;;
 	esac
