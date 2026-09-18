@@ -124,7 +124,9 @@ php_work="$build_root/build-php"
 cp -R -p -- "$php_source" "$php_work"
 (
 	cd "$php_work"
-	./configure --prefix="$install_root" \
+	# Autoconf appends LIBS to the final link. Keep zstd and zlib after static
+	# libzip so one-pass Unix linkers resolve libzip's compression symbols.
+	LIBS="-lzstd -lz" ./configure --prefix="$install_root" \
 		--with-config-file-path=. \
 		--disable-all --disable-cgi --disable-phpdbg --enable-cli --enable-phar --enable-filter \
 		--enable-ctype --enable-dom --enable-fileinfo --enable-mbstring --enable-opcache \
@@ -133,6 +135,8 @@ cp -R -p -- "$php_source" "$php_work"
 		--with-openssl="$prefix" --with-curl="$prefix" --with-zlib="$prefix" \
 		--with-zip --with-gmp="$prefix" --with-sodium="$prefix" \
 		--with-iconv --with-sqlite3="$prefix" --with-pdo-sqlite="$prefix" --with-libxml
+	grep -E '^EXTRA_LIBS = .* -lzstd -lz[[:space:]]*$' Makefile >/dev/null \
+		|| runtime_die "PHP link plan does not retain trailing libzip compression dependencies"
 	make -j"$jobs"
 	make install
 )
