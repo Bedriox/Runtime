@@ -33,7 +33,7 @@
             "modifications": [
                 {
                     "path": "generators/patches/google-leveldb-zstd-tag.patch",
-                    "sha256": "1e23970d8cf0d3c75136729aa79e4588bfd2690aabffca1af0995c6d6b494f8f",
+                    "sha256": "791b6e919214ad6d370515ffd49d4fbb73e27b834a1abef6f5fea77eab80f394",
                     "description": "Changes only the persisted zstd compression enumerator from 2 to Bedrock value 3."
                 }
             ]
