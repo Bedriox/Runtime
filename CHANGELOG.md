@@ -15,3 +15,9 @@
   continuing to reject directory, broken, and escaping links.
 - Retained LevelDB's static compression and C++ runtime closure when linking
   the Unix PHP extension.
+- Linked the Windows PHP extension through a packaged shared LevelDB library
+  with pinned static compression dependencies and verified PE imports.
+- Removed Unix runtime search paths, debug/build path leakage, and build-only
+  PHP development launchers from the relocatable package contract.
+- Neutralized OpenSSL's compiled configuration, engine, and provider-module
+  directories while keeping build-only discovery inside the isolated stage.

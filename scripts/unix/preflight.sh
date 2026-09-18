@@ -32,11 +32,15 @@ case "$target" in
 	linux-*)
 		runtime_require_command cc
 		runtime_require_command c++
+		runtime_require_command readelf
+		runtime_require_command strings
 		;;
 	macos-*)
 		runtime_require_command xcrun
 		xcrun --find clang >/dev/null 2>&1 || runtime_die "Xcode command-line clang was not found"
 		xcrun --find clang++ >/dev/null 2>&1 || runtime_die "Xcode command-line clang++ was not found"
+		xcrun --find otool >/dev/null 2>&1 || runtime_die "Xcode command-line otool was not found"
+		xcrun --find strings >/dev/null 2>&1 || runtime_die "Xcode command-line strings was not found"
 		;;
 esac
 

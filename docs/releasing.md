@@ -19,6 +19,10 @@ same target; do not delete an artifact merely to bypass this guard.
 - Include all required licenses and third-party acknowledgements.
 - Confirm that archives contain no source trees, caches, logs, credentials,
   private paths, environment dumps, or signing keys.
+- Confirm native inspection reports no packaged RPATH/RUNPATH/LC_RPATH and no
+  private build path in the PHP executable or shared modules.
+- Confirm runtime archives exclude build-only `phpize`, `php-config`, and PHAR
+  command launchers.
 - Keep each `.sha256` checksum adjacent to its archive; never place it inside
   the archived `bin/` tree.
 

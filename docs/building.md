@@ -50,6 +50,12 @@ SDK task receives build paths through reserved process-scoped variables because
 its `-t` task boundary does not forward positional arguments. Those variables
 are rejected if already present and cleared immediately after the task exits.
 
+The Windows build links the shared `leveldb.dll` to the exact pinned static
+zlib and zstd archives from the PHP SDK dependency closure. It verifies CMake's
+resolved headers and libraries, installs the LevelDB DLL beside `php.exe`, and
+checks the final PE imports. `php_leveldb.dll` must import `leveldb.dll`, while
+`leveldb.dll` must not depend on separate zlib or zstd DLLs.
+
 Windows ARM64 is experimental. The build must refuse to label it supported
 until PHP, GMP, LevelDB, the PHP extension, and the complete suite execute on a
 native ARM64 system. It is deliberately not selectable in the hosted workflow.
@@ -57,7 +63,8 @@ native ARM64 system. It is deliberately not selectable in the hosted workflow.
 ## Linux
 
 Use a current supported distribution with a C/C++ compiler, GNU make, CMake,
-autoconf, automake, libtool, bison, re2c, pkg-config, and archive tools.
+autoconf, automake, libtool, bison, re2c, pkg-config, archive tools, and GNU
+binutils (`readelf` and `strings`).
 
 ```shell
 ./compile.sh --target linux-x86_64
@@ -81,6 +88,19 @@ bison, re2c, and pkg-config. Build natively for the selected target:
 ```
 
 Cross-compilation alone cannot qualify a release.
+
+Unix builds compile PHP with a stable `/opt/bedriox-runtime` prefix and install
+through an isolated staging root. Build-only `phpize` and `php-config` copies
+are relocated inside that invocation and are not shipped. The release stage is
+an allowlist containing only the PHP executable and required shared modules;
+development launchers such as `phpize`, `php-config`, and `phar.phar` stay out
+of the runtime package. PHP and the LevelDB module are built without debug path
+records or runtime search paths. Linux `readelf` and macOS `otool`, followed by
+binary string inspection, fail the build if an RPATH or private invocation,
+source, download, or workspace path survives. OpenSSL uses the same neutral
+prefix for its compiled configuration, engine, and provider-module directories;
+only its build-time pkg-config metadata is relocated to the isolated dependency
+stage.
 
 ## Output roots
 
@@ -111,6 +131,6 @@ with its relocated configuration; unset or incorrect `BEDRIOX_RUNTIME_ROOT`
 values fail closed. Unix tar packages also preserve an executable `bin/php`.
 Only after these checks pass is the archive published and its adjacent
 `.sha256` sidecar written. Checksum sidecars are never stored inside `bin` or
-inside the archive. Safe symbolic links to regular files within the native
-install root, such as PHP's `phar` launcher, are copied as regular files during
-staging. Broken links, directory links, and links outside that root are rejected.
+inside the archive. If another target supplies an allowed runtime file through
+a safe in-tree symbolic link, finalization materializes it as a regular file;
+broken links, directory links, and links outside that root are rejected.

@@ -29,6 +29,10 @@ drop-in replacement for the required raw-zlib and zstd-compatible fork.
 The Unix extension build supplies and verifies the complete static LevelDB
 dependency closure through phpize's `LEVELDB_SHARED_LIBADD` input; do not move
 compression or the platform C++ runtime before `libleveldb.a`.
+On Windows, the PHP extension loads the packaged shared `leveldb.dll`. The
+native build verifies that DLL was linked to the pinned static zlib and zstd
+archives and places it beside `php.exe`; do not satisfy a missing dependency
+through the system `PATH`.
 
 ## Unix PHP fails to link libzip Zstandard symbols
 
@@ -37,6 +41,16 @@ closure through the supported `LIBZIP_LIBS` override and verifies that zstd
 remains after libzip in PHP's generated link plan. Static archive order is
 significant on one-pass Unix linkers: moving zstd before `libzip.a` leaves its
 `ZSTD_*` references unresolved.
+
+## Unix build reports a private path or runtime search path
+
+Runtime binaries must not retain an invocation-specific RPATH, RUNPATH,
+LC_RPATH, debug path, source path, download path, or repository path. Keep
+`--disable-rpath`, the release prefix maps, the neutral staged prefix, and the
+runtime-only file stage intact. Do not bypass the check by deleting the
+inspection command or by allowing an ambient shared library. Inspect the
+reported executable or module's dynamic metadata and strings to find the flag
+or generated file that introduced the path.
 
 ## A package works only in its build directory
 

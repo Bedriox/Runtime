@@ -22,6 +22,9 @@ extracts into paths containing spaces, and verifies the Unix executable mode.
 the exact downloads cache, the split platform entry points, and the
 environment-only PHP SDK task contract so positional argument forwarding cannot
 silently regress.
+`tests/unix-build-contract-test.php` locks the neutral staged prefix, explicit
+release flags, prefix maps, disabled runtime search paths, runtime-only file
+allowlist, and native binary inspection tools used by Linux and macOS builds.
 
 ## Native package qualification
 
@@ -50,6 +53,9 @@ Every target artifact must execute tests for:
 12. Exact package and archive contents, licenses, manifest, and checksums. The
     archive checksum is an adjacent sidecar and is not part of `bin` or the
     archive itself.
+13. No RPATH, RUNPATH, LC_RPATH, debug mapping, or binary string exposes a
+    private invocation, source, download, or repository path. Build-only PHP
+    development launchers are absent from the runtime archive.
 
 The runtime manifest records every source in the target's exact build closure,
 including its immutable version or commit, SHA-256, license identifier, and

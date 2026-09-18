@@ -12,9 +12,13 @@ source_root=$3
 download_root=$4
 build_root=$5
 prefix="$build_root/prefix"
-install_root="$build_root/native"
+runtime_prefix=/opt/bedriox-runtime
+install_stage="$build_root/install-stage"
+install_root="$install_stage$runtime_prefix"
 package_bin="$install_root/bin"
 mkdir -p -- "$prefix" "$package_bin"
+
+runtime_cflags="-O2 -g0 -fPIC -ffile-prefix-map=$build_root=. -fdebug-prefix-map=$build_root=. -fmacro-prefix-map=$build_root=. -ffile-prefix-map=$source_root=./sources -fdebug-prefix-map=$source_root=./sources -fmacro-prefix-map=$source_root=./sources -ffile-prefix-map=$repository_root=. -fdebug-prefix-map=$repository_root=. -fmacro-prefix-map=$repository_root=."
 
 jobs=${BEDRIOX_RUNTIME_JOBS:-}
 if [ -z "$jobs" ]; then
@@ -43,7 +47,7 @@ make_install_autoconf() {
 	(
 		cd "$work"
 		[ -x ./configure ] || autoreconf -fi
-		CFLAGS="-O2 -fPIC" CXXFLAGS="-O2 -fPIC" ./configure --prefix="$prefix" --disable-shared --enable-static "$@"
+		CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" ./configure --prefix="$prefix" --disable-shared --enable-static "$@"
 		make -j"$jobs"
 		make install
 	)
@@ -62,6 +66,8 @@ make_install_cmake() {
 		-DCMAKE_INSTALL_LIBDIR=lib \
 		-DCMAKE_PREFIX_PATH="$prefix" \
 		-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+		-DCMAKE_C_FLAGS="$runtime_cflags" \
+		-DCMAKE_CXX_FLAGS="$runtime_cflags" \
 		-DBUILD_SHARED_LIBS=OFF "$@"
 	cmake --build "$work" --parallel "$jobs"
 	cmake --install "$work"
@@ -72,7 +78,7 @@ zlib_work="$build_root/build-zlib"
 cp -R -p -- "$zlib_source" "$zlib_work"
 (
 	cd "$zlib_work"
-	CFLAGS="-O2 -fPIC" ./configure --prefix="$prefix" --static
+	CFLAGS="$runtime_cflags" ./configure --prefix="$prefix" --static
 	make -j"$jobs"
 	make install
 )
@@ -80,6 +86,7 @@ make_install_autoconf gmp --enable-cxx
 
 openssl_source=$(source_path openssl)
 openssl_work="$build_root/build-openssl"
+openssl_stage="$build_root/install-openssl"
 cp -R -p -- "$openssl_source" "$openssl_work"
 case "$target" in
 	linux-x86_64) openssl_target=linux-x86_64 ;;
@@ -89,10 +96,30 @@ case "$target" in
 esac
 (
 	cd "$openssl_work"
-	./Configure "$openssl_target" --prefix="$prefix" --libdir=lib no-shared no-tests
+	CFLAGS="$runtime_cflags" ./Configure "$openssl_target" --prefix="$runtime_prefix" \
+		--openssldir="$runtime_prefix/ssl" --libdir=lib no-shared no-tests
 	make -j"$jobs"
-	make install_sw
+	make install_sw DESTDIR="$openssl_stage"
 )
+openssl_install_root="$openssl_stage$runtime_prefix"
+[ -d "$openssl_install_root/include/openssl" ] || runtime_die "staged OpenSSL headers are missing"
+[ -f "$openssl_install_root/lib/libcrypto.a" ] || runtime_die "staged OpenSSL libcrypto is missing"
+cp -R -p -- "$openssl_install_root/." "$prefix/"
+for metadata in "$prefix"/lib/pkgconfig/libcrypto.pc "$prefix"/lib/pkgconfig/libssl.pc "$prefix"/lib/pkgconfig/openssl.pc; do
+	[ -f "$metadata" ] || runtime_die "staged OpenSSL pkg-config metadata is missing: ${metadata##*/}"
+	php -r '
+$contents = file_get_contents($argv[1]);
+if ($contents === false || !str_contains($contents, $argv[2])) {
+    fwrite(STDERR, "OpenSSL metadata does not contain the neutral runtime prefix.\n");
+    exit(1);
+}
+$rewritten = str_replace($argv[2], $argv[3], $contents, $count);
+if ($count < 1 || file_put_contents($argv[1], $rewritten, LOCK_EX) === false) {
+    fwrite(STDERR, "Could not relocate OpenSSL build metadata.\n");
+    exit(1);
+}
+' "$metadata" "$runtime_prefix" "$prefix"
+done
 
 make_install_autoconf sqlite
 make_install_autoconf libxml2 --without-python --without-lzma
@@ -128,7 +155,9 @@ cp -R -p -- "$php_source" "$php_work"
 	# This keeps compression dependencies after libzip on one-pass Unix linkers.
 	LIBZIP_CFLAGS=$(pkg-config --cflags libzip)
 	LIBZIP_LIBS=$(pkg-config --static --libs libzip)
-	LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" ./configure --prefix="$install_root" \
+	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" \
+		LIBZIP_CFLAGS="$LIBZIP_CFLAGS" LIBZIP_LIBS="$LIBZIP_LIBS" \
+		./configure --prefix="$runtime_prefix" --disable-rpath \
 		--with-config-file-path=. \
 		--disable-all --disable-cgi --disable-phpdbg --enable-cli --enable-phar --enable-filter \
 		--enable-ctype --enable-dom --enable-fileinfo --enable-mbstring --enable-opcache \
@@ -143,20 +172,44 @@ cp -R -p -- "$php_source" "$php_work"
 		*) runtime_die "PHP link plan does not retain zstd after static libzip" ;;
 	esac
 	make -j"$jobs"
-	make install
+	make install INSTALL_ROOT="$install_stage"
 )
 
 leveldb_extension_source=$(source_path php-leveldb)
 leveldb_extension_work="$build_root/build-php-leveldb"
 cp -R -p -- "$leveldb_extension_source" "$leveldb_extension_work"
+build_phpize="$build_root/phpize-build"
+build_php_config="$build_root/php-config-build"
+for tool in phpize php-config; do
+	input="$package_bin/$tool"
+	output="$build_root/$tool-build"
+	[ -f "$input" ] || runtime_die "PHP install is missing build tool: $tool"
+	"$package_bin/php" -n -r '
+$input = file_get_contents($argv[3]);
+if ($input === false || !str_contains($input, $argv[1])) {
+    fwrite(STDERR, "Build tool does not contain the neutral runtime prefix.\n");
+    exit(1);
+}
+$output = str_replace($argv[1], $argv[2], $input, $count);
+if ($count < 1 || file_put_contents($argv[4], $output, LOCK_EX) === false) {
+    fwrite(STDERR, "Could not write relocated build tool.\n");
+    exit(1);
+}
+' "$runtime_prefix" "$install_root" "$input" "$output"
+	chmod 0755 "$output"
+done
+[ -f "$install_root/include/php/main/php.h" ] || runtime_die "staged PHP development headers are missing"
+[ "$("$build_php_config" --prefix)" = "$install_root" ] || runtime_die "relocated php-config reports the wrong build prefix"
+"$build_phpize" --version >/dev/null || runtime_die "relocated phpize is not executable"
 (
 	cd "$leveldb_extension_work"
-	"$package_bin/phpize"
+	"$build_phpize"
 	case "$target" in
 		linux-*) leveldb_dependencies='-lzstd -lz -lstdc++' ;;
 		macos-*) leveldb_dependencies='-lzstd -lz -lc++' ;;
 	esac
-	LEVELDB_SHARED_LIBADD="$leveldb_dependencies" ./configure --with-php-config="$package_bin/php-config" --with-leveldb="$prefix"
+	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" LEVELDB_SHARED_LIBADD="$leveldb_dependencies" \
+		./configure --disable-rpath --with-php-config="$build_php_config" --with-leveldb="$prefix"
 	leveldb_shared_libadd=$(sed -n 's/^LEVELDB_SHARED_LIBADD = //p' Makefile)
 	case "${leveldb_shared_libadd##*-lleveldb}" in
 		*'-lzstd'*'-lz'*) ;;
@@ -176,12 +229,48 @@ ca_file=${ca_file##*/}
 ca_path="$download_root/ca-bundle-$ca_file"
 [ -f "$ca_path" ] || runtime_die "verified CA bundle is missing"
 
-extension_dir=$($package_bin/php-config --extension-dir)
+extension_dir=$($build_php_config --extension-dir)
 mkdir -p -- "$package_bin/ext"
 cp -- "$extension_dir/leveldb.so" "$package_bin/ext/leveldb.so"
 if [ -f "$extension_dir/opcache.so" ]; then
 	cp -- "$extension_dir/opcache.so" "$package_bin/ext/opcache.so"
 fi
+
+runtime_stage="$build_root/runtime-stage"
+mkdir -p -- "$runtime_stage/ext"
+cp -- "$package_bin/php" "$runtime_stage/php"
+chmod 0755 "$runtime_stage/php"
+for extension in "$package_bin"/ext/*; do
+	[ -f "$extension" ] || runtime_die "runtime extension stage is empty"
+	cp -- "$extension" "$runtime_stage/ext/${extension##*/}"
+done
+
+for binary in "$runtime_stage/php" "$runtime_stage"/ext/*; do
+	binary_name=${binary##*/}
+	dynamic_report="$build_root/dynamic-$binary_name.txt"
+	strings_report="$build_root/strings-$binary_name.txt"
+	case "$target" in
+		linux-*)
+			readelf -d "$binary" > "$dynamic_report" || runtime_die "could not inspect runtime ELF metadata: $binary_name"
+			if grep -E '(RPATH|RUNPATH)' "$dynamic_report" >/dev/null; then
+				runtime_die "runtime binary contains an RPATH or RUNPATH: $binary_name"
+			fi
+			strings "$binary" > "$strings_report" || runtime_die "could not inspect runtime binary strings: $binary_name"
+			;;
+		macos-*)
+			xcrun otool -l "$binary" > "$dynamic_report" || runtime_die "could not inspect runtime Mach-O metadata: $binary_name"
+			if grep -q 'LC_RPATH' "$dynamic_report"; then
+				runtime_die "runtime binary contains an LC_RPATH: $binary_name"
+			fi
+			xcrun strings "$binary" > "$strings_report" || runtime_die "could not inspect runtime binary strings: $binary_name"
+			;;
+	esac
+	for private_root in "$build_root" "$source_root" "$repository_root" "$download_root"; do
+		if grep -F "$private_root" "$strings_report" >/dev/null; then
+			runtime_die "runtime binary contains a private build path: $binary_name"
+		fi
+	done
+done
 
 compiler_identity=$(cc --version 2>/dev/null | sed -n '1p')
 linker_identity=$(ld -v 2>&1 | sed -n '1p')
@@ -197,7 +286,7 @@ source_ids='php,leveldb,php-leveldb,ca-bundle,libsodium,libxml2,oniguruma,zlib,g
 	--repository-root="$repository_root" \
 	--target="$target" \
 	--invocation-root="$build_root" \
-	--source-root="$package_bin" \
+	--source-root="$runtime_stage" \
 	--package-parent="$package_parent" \
 	--package-root="$package_root" \
 	--artifact-root="$artifact_root" \

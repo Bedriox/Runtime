@@ -46,6 +46,42 @@ windowsBuildEnsure(
 );
 
 foreach ([
+    'if not exist "%ZLIB_HEADER%"',
+    'if not exist "%ZLIB_LIBRARY%"',
+    'if not exist "%ZSTD_HEADER%"',
+    'if not exist "%ZSTD_LIBRARY%"',
+    '-DBUILD_SHARED_LIBS=ON',
+    'set "PHP_BUILD_CMAKE=%PHP_BUILD:\\=/%"',
+    '"-DZLIB_INCLUDE_DIR:PATH=%PHP_BUILD_CMAKE%/include"',
+    '"-DZLIB_LIBRARY:FILEPATH=%ZLIB_LIBRARY_CMAKE%"',
+    '"-Dzstd_INCLUDE_DIRS:PATH=%PHP_BUILD_CMAKE%/include"',
+    '"-Dzstd_LIBRARIES:FILEPATH=%ZSTD_LIBRARY_CMAKE%"',
+    'findstr /L /X /C:"ZLIB_LIBRARY:FILEPATH=%ZLIB_LIBRARY_CMAKE%"',
+    'findstr /L /X /C:"zstd_LIBRARIES:FILEPATH=%ZSTD_LIBRARY_CMAKE%"',
+    'if not exist "%PHP_BUILD%\\bin\\leveldb.dll"',
+    'if not exist "%PHP_BUILD%\\lib\\leveldb.lib"',
+    'copy /Y "%PHP_BUILD%\\bin\\leveldb.dll" "%PHP_BIN%leveldb.dll"',
+    'dumpbin /nologo /dependents "%PHP_LEVELDB_DLL%"',
+    'findstr /I /L /C:"leveldb.dll"',
+    'dumpbin /nologo /dependents "%PHP_BIN%leveldb.dll"',
+    'findstr /I /R "zlib.*\\.dll zstd.*\\.dll"',
+] as $required) {
+    windowsBuildEnsure(str_contains($driver, $required), "Windows LevelDB closure is missing: $required");
+}
+windowsBuildEnsure(
+    !str_contains($driver, '-DBUILD_SHARED_LIBS=OFF'),
+    'Windows still builds LevelDB as a static library.',
+);
+windowsBuildEnsure(
+    !str_contains($driver, '-DCMAKE_PREFIX_PATH='),
+    'Windows LevelDB discovery still permits broad prefix probing.',
+);
+windowsBuildEnsure(
+    str_contains($driver, '--with-leveldb=shared,"%PHP_BUILD%"'),
+    'The PHP LevelDB extension is not built as a shared extension against the reviewed prefix.',
+);
+
+foreach ([
     '- windows-x86_64',
     'windows-x86_64) runner=windows-2022 ;;',
     'path: ${{ github.workspace }}/downloads',
