@@ -1,0 +1,20 @@
+Microsoft Visual C++ VC143 Runtime DLLs
+Copyright Microsoft Corporation. All rights reserved.
+
+Bedriox Windows Runtime packages include unmodified Microsoft Visual C++
+runtime files obtained from the Visual Studio 2022 VC Redist directory. These
+files are Microsoft Distributable Code and are licensed separately from
+Bedriox. They are not covered by the Bedriox GPL-3.0-only license. Use and
+further distribution are subject to the applicable Microsoft terms.
+
+Visual Studio Community 2022 Software License Terms:
+https://visualstudio.microsoft.com/license-terms/vs2022-ga-community/
+
+Visual Studio 2022 Distributable Code list:
+https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution
+
+Visual C++ redistribution documentation:
+https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170
+
+Microsoft and Visual Studio are trademarks of the Microsoft group of
+companies. Bedriox is not affiliated with or endorsed by Microsoft.

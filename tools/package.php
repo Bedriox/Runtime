@@ -120,6 +120,17 @@ try {
             throw new RuntimeException('Could not create package ' . $directory . ' directory.');
         }
     }
+    foreach ([
+        'NOTICE' => 'NOTICE',
+        'THIRD_PARTY_NOTICES.md' => 'THIRD_PARTY_NOTICES.md',
+        'licenses/microsoft-vc143-runtime-NOTICE.txt' => 'licenses/microsoft-vc143-runtime-NOTICE.txt',
+    ] as $sourceRelative => $destinationRelative) {
+        $source = $repositoryRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $sourceRelative);
+        $destination = $packageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $destinationRelative);
+        if (!is_file($source) || !copy($source, $destination)) {
+            throw new RuntimeException('Could not stage package notice: ' . $sourceRelative);
+        }
+    }
     $manifestPath = $repositoryRoot . DIRECTORY_SEPARATOR . 'manifests' . DIRECTORY_SEPARATOR . 'dependencies.json';
     $manifest = json_decode((string) file_get_contents($manifestPath), true, 64, JSON_THROW_ON_ERROR);
     if (!is_array($manifest) || !isset($manifest['sources']) || !is_array($manifest['sources'])) {

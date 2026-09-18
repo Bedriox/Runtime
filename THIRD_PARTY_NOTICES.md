@@ -41,11 +41,19 @@ Versions and immutable digests are authoritative in
 | CMake | BSD-3-Clause | `licenses/cmake-BSD-3-Clause.txt` |
 | df-mc/goleveldb fixture producer | BSD-2-Clause | `licenses/df-mc-goleveldb-BSD-2-Clause.txt` |
 | Google LevelDB fixture producer | BSD-3-Clause | `licenses/google-leveldb-BSD-3-Clause.txt` |
+| Microsoft Visual C++ VC143 Runtime DLLs | Microsoft Visual Studio 2022 Software License Terms — Distributable Code | `licenses/microsoft-vc143-runtime-NOTICE.txt` |
 
 The Windows x86-64 PHP SDK packages above form the reviewed native dependency
 closure for the configured PHP 8.4 build. Their exact archive URLs, sizes, and
 SHA-256 digests are pinned in `manifests/dependencies.json`; the mutable PHP SDK
 package index is not consumed as a build input.
+
+Windows packages deploy the Microsoft VC143 runtime DLLs application-locally.
+The build copies only the signed import closure, without modification, from
+the active licensed Visual Studio 2022 Redist directory. These DLLs remain
+subject to Microsoft's Visual Studio 2022 Software License Terms and
+Distributable Code list; they are separate works and are not offered under
+GPL-3.0-only.
 
 Minecraft, Bedrock Edition, Mojang Studios, Microsoft, PHP, PMMP, and other
 names belong to their respective owners. Bedriox is independent and is not

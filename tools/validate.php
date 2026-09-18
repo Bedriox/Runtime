@@ -40,6 +40,7 @@ $requiredFiles = [
     'scripts/windows/stage-runtime.ps1',
     'licenses/df-mc-goleveldb-BSD-2-Clause.txt',
     'licenses/google-leveldb-BSD-3-Clause.txt',
+    'licenses/microsoft-vc143-runtime-NOTICE.txt',
     'tests/helpers/leveldb-fixture-probe.php',
     'tests/helpers/leveldb-sst-inspect-probe.php',
     'tests/leveldb-fixture-test.php',

@@ -99,6 +99,9 @@ $vcRuntime = Assert-AbsoluteExistingDirectory $VcRuntimeDirectory 'Visual C++ ru
 if ((Split-Path -Leaf $vcRuntime) -ne 'Microsoft.VC143.CRT' -or (Split-Path -Leaf (Split-Path -Parent $vcRuntime)) -ne $Architecture) {
     throw "Visual C++ runtime directory does not match the selected $Architecture VC143 closure: $vcRuntime"
 }
+if ($vcRuntime -notmatch '(?i)[\\/]VC[\\/]Redist[\\/]MSVC[\\/][^\\/]+[\\/](?:x64|arm64)[\\/]Microsoft\.VC143\.CRT$') {
+    throw "Visual C++ runtime directory is outside the licensed Visual Studio VC Redist tree: $vcRuntime"
+}
 if (-not [System.IO.Path]::IsPathRooted($RuntimeStage) -or (Test-Path -LiteralPath $RuntimeStage)) {
     throw "Runtime stage must be a new absolute path: $RuntimeStage"
 }

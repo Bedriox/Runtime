@@ -155,7 +155,14 @@ function validatePackage(string $root): void
     $executable = packageExecutable($root);
     ensure(is_file($executable), 'Packaged PHP executable is missing.');
     ensure(realpath($executable) === realpath(PHP_BINARY), 'Qualification is not running with the packaged PHP executable.');
-    foreach (['php.ini', 'certs/cacert.pem', 'runtime-manifest.json'] as $relative) {
+    foreach ([
+        'php.ini',
+        'certs/cacert.pem',
+        'runtime-manifest.json',
+        'NOTICE',
+        'THIRD_PARTY_NOTICES.md',
+        'licenses/microsoft-vc143-runtime-NOTICE.txt',
+    ] as $relative) {
         ensure(is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative)), $relative . ' is missing.');
     }
     $licenseRoot = $root . DIRECTORY_SEPARATOR . 'licenses';

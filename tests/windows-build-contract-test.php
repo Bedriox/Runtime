@@ -46,6 +46,7 @@ windowsBuildEnsure(str_contains($driver, '--with-php-build="..\deps"'), 'PHP con
 windowsBuildEnsure(!str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure embeds its absolute dependency path.');
 windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
+windowsBuildEnsure(str_contains($stage, "VC[\\\\/]Redist[\\\\/]MSVC"), 'Runtime staging does not constrain redistributable DLLs to the licensed Visual Studio Redist tree.');
 windowsBuildEnsure(str_contains($stage, "'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'"), 'Runtime staging does not load the trusted in-box signature module explicitly.');
 windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
 windowsBuildEnsure(str_contains($stage, "'(?:^|,\s*)O=Microsoft Corporation(?:,|$)'"), 'Visual C++ runtime signer validation does not require Microsoft Corporation as the exact organization.');
@@ -64,12 +65,20 @@ windowsBuildEnsure(
     'The native driver still relies on positional arguments from phpsdk-starter.',
 );
 windowsBuildEnsure(str_contains($driver, '--with-prefix=bedriox-runtime'), 'Windows PHP prefix is not neutral.');
-windowsBuildEnsure(str_contains($driver, '--with-config-file-path=bedriox-runtime'), 'Windows PHP configuration path is not neutral.');
+windowsBuildEnsure(str_contains($driver, '--enable-zts'), 'Windows PHP does not explicitly preserve the reviewed thread-safe ABI.');
 windowsBuildEnsure(str_contains($driver, '--with-iconv --with-libxml'), 'Windows PHP does not enable the pinned iconv prerequisite before libxml.');
+foreach (['--with-dom', '--with-simplexml', '--with-xml', '--enable-zip', '--enable-zlib'] as $option) {
+    windowsBuildEnsure(str_contains($driver, $option), "Windows PHP configure is missing the correct $option form.");
+}
+foreach (['--enable-dom', '--enable-simplexml', '--enable-xml ', '--with-zip', '--with-zlib', '--enable-hash', '--enable-json', '--with-config-file-path'] as $option) {
+    windowsBuildEnsure(!str_contains($driver, $option), "Windows PHP configure retains the invalid $option form.");
+}
 windowsBuildEnsure(str_contains($driver, 'if errorlevel 1 (popd & exit /b 38)'), 'Windows PHP configure failures are not propagated.');
 windowsBuildEnsure(str_contains($driver, 'nmake snap'), 'Windows does not produce the upstream runtime snapshot.');
 windowsBuildEnsure(!str_contains($driver, 'nmake install'), 'Windows still installs the complete PHP development tree.');
 windowsBuildEnsure(!str_contains($driver, '--with-prefix="%'), 'Windows embeds an invocation-specific PHP prefix.');
+$expectedConfigure = 'call configure.bat --disable-all --enable-cli --enable-zts --enable-ctype --with-dom --enable-fileinfo --enable-filter --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --with-simplexml --enable-sockets --enable-tokenizer --with-xml --enable-xmlreader --enable-xmlwriter --enable-zlib --enable-zip --with-prefix=bedriox-runtime --with-php-build="..\deps" --with-iconv --with-libxml --with-openssl --with-curl --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared';
+windowsBuildEnsure(str_contains($driver, $expectedConfigure), 'Windows PHP configure options differ from the reviewed PHP 8.4.25 contract.');
 
 foreach ([
     'Get-PeImports',
