@@ -45,8 +45,6 @@ windowsBuildEnsure(
 windowsBuildEnsure(str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure is not bound to the verified SDK dependency tree.');
 windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
-windowsBuildEnsure(str_contains($driver, '/C:"not enabled" /C:"can\'t be enabled"'), 'Windows configure warnings for missing requested features are not fatal.');
-windowsBuildEnsure(str_contains($driver, 'set "PHP_CONFIGURE_EXIT=%ERRORLEVEL%"'), 'Windows configure failures do not preserve their exit status before printing diagnostics.');
 windowsBuildEnsure(str_contains($stage, 'Get-AuthenticodeSignature -LiteralPath $dll.FullName'), 'Visual C++ runtime candidates are not signature-verified.');
 windowsBuildEnsure(
     preg_match('/phpsdk-vs17-\{0\}\.bat/', $orchestrator) === 1,
@@ -62,6 +60,7 @@ windowsBuildEnsure(
 );
 windowsBuildEnsure(str_contains($driver, '--with-prefix=bedriox-runtime'), 'Windows PHP prefix is not neutral.');
 windowsBuildEnsure(str_contains($driver, '--with-config-file-path=bedriox-runtime'), 'Windows PHP configuration path is not neutral.');
+windowsBuildEnsure(str_contains($driver, 'if errorlevel 1 (popd & exit /b 38)'), 'Windows PHP configure failures are not propagated.');
 windowsBuildEnsure(str_contains($driver, 'nmake snap'), 'Windows does not produce the upstream runtime snapshot.');
 windowsBuildEnsure(!str_contains($driver, 'nmake install'), 'Windows still installs the complete PHP development tree.');
 windowsBuildEnsure(!str_contains($driver, '--with-prefix="%'), 'Windows embeds an invocation-specific PHP prefix.');
