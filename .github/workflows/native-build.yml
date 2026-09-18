@@ -99,7 +99,7 @@ jobs:
           echo "$(brew --prefix libtool)/libexec/gnubin" >> "$GITHUB_PATH"
 
       - name: Restore verified source cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: downloads
           key: runtime-sources-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('manifests/**') }}
@@ -112,7 +112,7 @@ jobs:
         run: ./compile.sh --target "${{ inputs.target }}"
 
       - name: Upload qualified package
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: bedriox-runtime-${{ inputs.target }}-${{ github.sha }}
           path: artifacts/
