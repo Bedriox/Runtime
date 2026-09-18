@@ -43,6 +43,8 @@ Every target artifact must execute tests for:
    P-384 key creation and ES384 verification through the default provider activated
    by the packaged relocatable `config/openssl.cnf`; cURL qualification does
    not inject a per-request CA path.
+   Windows startup must also succeed with the configured external OPcache
+   file-cache fallback directory available.
 9. Deterministic cURL and OpenSSL rejection of an ephemeral local self-signed
    certificate, plus real-network public-chain acceptance and certificate and
    hostname rejection by both clients. Negative network evidence must identify a

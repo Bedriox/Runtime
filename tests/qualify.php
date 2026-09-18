@@ -670,6 +670,13 @@ try {
         $missing = array_values(array_filter(REQUIRED_EXTENSIONS, static fn(string $extension): bool => !extension_loaded($extension)));
         ensure($missing === [], 'Missing extensions: ' . implode(', ', $missing));
         ensure(extension_loaded('Zend OPcache'), 'Zend OPcache is not loaded.');
+        $cacheRoot = getenv('BEDRIOX_RUNTIME_CACHE');
+        ensure(is_string($cacheRoot) && $cacheRoot !== '', 'BEDRIOX_RUNTIME_CACHE is not configured.');
+        $expectedOpcodeCache = realpath($cacheRoot . DIRECTORY_SEPARATOR . 'opcache');
+        $configuredOpcodeCache = ini_get('opcache.file_cache');
+        ensure($expectedOpcodeCache !== false, 'The external opcode cache directory is missing.');
+        ensure(is_string($configuredOpcodeCache) && realpath($configuredOpcodeCache) === $expectedOpcodeCache, 'OPcache does not use the external runtime cache.');
+        ensure(ini_get('opcache.file_cache_fallback') === '1', 'Windows OPcache file-cache fallback is disabled.');
         ensure(class_exists(SQLite3::class) && class_exists(ZipArchive::class), 'Required extension classes are unavailable.');
     });
 

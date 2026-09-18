@@ -163,6 +163,10 @@ licenses associated with that target's exact source closure, and renders
 provider. Launchers set `BEDRIOX_RUNTIME_ROOT` to the absolute `bin` directory
 and `OPENSSL_CONF` to that packaged file at runtime; neither configuration
 contains build-machine paths.
+The launcher must create `${BEDRIOX_RUNTIME_CACHE}/opcache` before PHP starts.
+This provides Windows OPcache's documented file-cache fallback when ASLR
+prevents a CLI process from attaching to shared memory, without writing into
+the immutable runtime package.
 
 The finalizer detects modules actually emitted into `bin/ext`. It writes load
 directives only for those shared modules, so extensions compiled statically are

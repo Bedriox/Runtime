@@ -26,6 +26,13 @@ Confirm the launcher sets `OPENSSL_CONF` to the runtime's
 part of the qualified package inventory; pointing at a system-wide OpenSSL
 configuration makes the runtime environment-dependent.
 
+## Windows reports unusable opcode handlers due to ASLR
+
+Use the Bedriox launcher rather than invoking the packaged PHP executable
+directly. The launcher creates the external runtime cache and sets
+`BEDRIOX_RUNTIME_CACHE`; the packaged configuration uses its `opcache`
+subdirectory for Windows file-cache fallback without modifying `bin`.
+
 ## LevelDB fails to load
 
 Check that the PHP extension ABI matches the packaged PHP build and that all

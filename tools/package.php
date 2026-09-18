@@ -30,9 +30,16 @@ function run(array $command, ?array $environment = null): array
 /** @return array<string, string> */
 function qualificationEnvironment(string $runtimeRoot): array
 {
+    $cacheRoot = dirname($runtimeRoot) . DIRECTORY_SEPARATOR . 'runtime-cache';
+    $opcodeCache = $cacheRoot . DIRECTORY_SEPARATOR . 'opcache';
+    if (!is_dir($opcodeCache) && !mkdir($opcodeCache, 0700, true)) {
+        throw new RuntimeException('Could not create the runtime qualification opcode cache.');
+    }
     $environment = getenv();
     $environment = is_array($environment) ? $environment : [];
     $blocked = [
+        'BEDRIOX_RUNTIME_CACHE',
+        'BEDRIOX_RUNTIME_ROOT',
         'CURL_CA_BUNDLE',
         'OPENSSL_CONF',
         'OPENSSL_MODULES',
@@ -45,6 +52,7 @@ function qualificationEnvironment(string $runtimeRoot): array
         }
     }
     $environment['BEDRIOX_RUNTIME_ROOT'] = $runtimeRoot;
+    $environment['BEDRIOX_RUNTIME_CACHE'] = $cacheRoot;
     $environment['OPENSSL_CONF'] = $runtimeRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
     return $environment;
 }
@@ -275,9 +283,7 @@ try {
     $relocatedExecutable = $relocationRoot . DIRECTORY_SEPARATOR . (str_starts_with($target, 'windows-') ? 'php.exe' : 'php');
     $relocatedIni = $relocationRoot . DIRECTORY_SEPARATOR . 'php.ini';
     $probe = $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'relocation-probe.php';
-    $relocatedEnvironment = $environment;
-    $relocatedEnvironment['BEDRIOX_RUNTIME_ROOT'] = $relocationRoot;
-    $relocatedEnvironment['OPENSSL_CONF'] = $relocationRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    $relocatedEnvironment = qualificationEnvironment($relocationRoot);
     [$probeStatus, $probeOutput, $probeError] = run([
         $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
     ], $relocatedEnvironment);
@@ -323,6 +329,15 @@ try {
     ], $wrongOpenSslEnvironment);
     if ($wrongOpenSslStatus === 0 || !str_contains($wrongOpenSslError, 'OPENSSL_CONF')) {
         throw new RuntimeException('Relocated runtime did not fail closed with the wrong OPENSSL_CONF.');
+    }
+
+    $unsetCacheEnvironment = $relocatedEnvironment;
+    unset($unsetCacheEnvironment['BEDRIOX_RUNTIME_CACHE']);
+    [$unsetCacheStatus] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $unsetCacheEnvironment);
+    if ($unsetCacheStatus === 0) {
+        throw new RuntimeException('Relocated runtime did not fail closed when BEDRIOX_RUNTIME_CACHE was unset.');
     }
 
     [$relocatedStatus, $relocatedOutput, $relocatedError] = run([

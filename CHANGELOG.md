@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Package a relocatable OpenSSL provider configuration and qualify Bedrock's P-384/ES384 operations before publishing runtime artifacts.
+- Configure a writable external OPcache file-cache fallback so Windows CLI startup remains reliable when ASLR prevents shared-memory attachment.
 - Use Homebrew's native PHP 8.4 bootstrap on macOS hosted builders.
 - Preserve static libcurl's complete library and macOS framework closure during Unix PHP configuration.
 - Build Unix iconv support from the pinned GNU libiconv source.

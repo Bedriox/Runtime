@@ -39,6 +39,9 @@ build flags, and packaged file hashes.
 
 The runtime never installs globally, changes `PATH`, updates a certificate
 store, or removes another PHP installation.
+Mutable opcode cache entries live outside the immutable package under the
+launcher-supplied `BEDRIOX_RUNTIME_CACHE`; they are not part of the package
+inventory or trust boundary.
 
 ## Target maturity
 

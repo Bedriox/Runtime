@@ -107,6 +107,8 @@ if (is_file($iniPath) && ($ini = file_get_contents($iniPath)) !== false) {
         'extension_dir = "${BEDRIOX_RUNTIME_ROOT}/ext"',
         'openssl.cafile = "${BEDRIOX_RUNTIME_ROOT}/certs/cacert.pem"',
         'curl.cainfo = "${BEDRIOX_RUNTIME_ROOT}/certs/cacert.pem"',
+        'opcache.file_cache = "${BEDRIOX_RUNTIME_CACHE}/opcache"',
+        'opcache.file_cache_fallback = On',
         'phar.require_hash = On',
         '@BEDRIOX_DYNAMIC_EXTENSIONS@',
     ] as $required) {

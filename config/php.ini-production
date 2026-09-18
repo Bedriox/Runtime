@@ -51,6 +51,8 @@ opcache.enable_cli = On
 opcache.jit = disable
 opcache.validate_timestamps = On
 opcache.revalidate_freq = 2
+opcache.file_cache = "${BEDRIOX_RUNTIME_CACHE}/opcache"
+opcache.file_cache_fallback = On
 
 ; The finalizer adds only extension modules that were actually built shared.
 ; Statically linked modules must not be loaded again.

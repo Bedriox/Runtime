@@ -38,6 +38,19 @@ try {
         throw new RuntimeException('OPENSSL_CONF must resolve inside the relocated package.');
     }
 
+    $cacheRoot = getenv('BEDRIOX_RUNTIME_CACHE');
+    $opcodeCache = is_string($cacheRoot) && $cacheRoot !== ''
+        ? realpath($cacheRoot . DIRECTORY_SEPARATOR . 'opcache')
+        : false;
+    $configuredOpcodeCache = ini_get('opcache.file_cache');
+    if (
+        $opcodeCache === false
+        || !is_string($configuredOpcodeCache)
+        || realpath($configuredOpcodeCache) !== $opcodeCache
+    ) {
+        throw new RuntimeException('BEDRIOX_RUNTIME_CACHE must provide the configured external opcode cache.');
+    }
+
     $normalizePath = static function (string $path): string {
         $normalized = rtrim(str_replace('\\', '/', $path), '/');
         return PHP_OS_FAMILY === 'Windows' ? strtolower($normalized) : $normalized;
