@@ -74,7 +74,7 @@ final class PackageBuilder
         if ($sourceReal === false || !is_dir($sourceReal)) {
             throw new RuntimeException('Native runtime source directory is missing.');
         }
-        if (is_link($sourceReal)) {
+        if (is_link($source)) {
             throw new RuntimeException('Native runtime source must not be a symbolic link.');
         }
         if (!mkdir($destination, 0755, false)) {
@@ -85,9 +85,6 @@ final class PackageBuilder
             RecursiveIteratorIterator::SELF_FIRST,
         );
         foreach ($iterator as $entry) {
-            if ($entry->isLink()) {
-                throw new RuntimeException('Native runtime contains a symbolic link: ' . $entry->getPathname());
-            }
             $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($sourceReal) + 1));
             self::assertRelativePath($relative);
             if (str_ends_with(strtolower($relative), '.sha256')) {
@@ -97,6 +94,21 @@ final class PackageBuilder
                 continue;
             }
             $target = $destination . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            if ($entry->isLink()) {
+                $resolved = realpath($entry->getPathname());
+                if ($resolved === false || !is_file($resolved) || !self::isPathBelow($resolved, $sourceReal)) {
+                    throw new RuntimeException('Native runtime contains an unsafe symbolic link: ' . $relative);
+                }
+                $parent = dirname($target);
+                if (!is_dir($parent) && !mkdir($parent, 0755, true) && !is_dir($parent)) {
+                    throw new RuntimeException('Could not create package file parent: ' . $relative);
+                }
+                if (!copy($resolved, $target)) {
+                    throw new RuntimeException('Could not materialize native runtime link: ' . $relative);
+                }
+                @chmod($target, fileperms($resolved) & 0777);
+                continue;
+            }
             if ($entry->isDir()) {
                 if (!mkdir($target, 0755, false) && !is_dir($target)) {
                     throw new RuntimeException('Could not create package directory: ' . $relative);
@@ -196,5 +208,16 @@ final class PackageBuilder
         if (in_array('.', $segments, true) || in_array('..', $segments, true)) {
             throw new RuntimeException('Unsafe package path: ' . $path);
         }
+    }
+
+    private static function isPathBelow(string $path, string $parent): bool
+    {
+        $normalizedPath = str_replace('\\', '/', $path);
+        $prefix = rtrim(str_replace('\\', '/', $parent), '/') . '/';
+        if (PHP_OS_FAMILY === 'Windows') {
+            $normalizedPath = strtolower($normalizedPath);
+            $prefix = strtolower($prefix);
+        }
+        return str_starts_with($normalizedPath, $prefix);
     }
 }

@@ -111,4 +111,6 @@ with its relocated configuration; unset or incorrect `BEDRIOX_RUNTIME_ROOT`
 values fail closed. Unix tar packages also preserve an executable `bin/php`.
 Only after these checks pass is the archive published and its adjacent
 `.sha256` sidecar written. Checksum sidecars are never stored inside `bin` or
-inside the archive.
+inside the archive. Safe symbolic links to regular files within the native
+install root, such as PHP's `phar` launcher, are copied as regular files during
+staging. Broken links, directory links, and links outside that root are rejected.

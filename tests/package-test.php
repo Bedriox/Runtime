@@ -26,11 +26,32 @@ try {
     file_put_contents($native . DIRECTORY_SEPARATOR . 'php.ini', 'ambient path must not survive');
     file_put_contents($native . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'leveldb.so', 'leveldb');
     file_put_contents($native . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'opcache.so', 'opcache');
+    $safeLinkCreated = function_exists('symlink') && @symlink('php', $native . DIRECTORY_SEPARATOR . 'phar');
 
     $package = $outputParent . DIRECTORY_SEPARATOR . 'bin';
     PackageBuilder::assertNewDirectoryBelow($package, $outputParent, 'Test package');
     PackageBuilder::copyTree($native, $package);
     packageTestEnsure(!is_file($package . DIRECTORY_SEPARATOR . 'php.ini'), 'Ambient php.ini was copied.');
+    if ($safeLinkCreated) {
+        packageTestEnsure(!is_link($package . DIRECTORY_SEPARATOR . 'phar'), 'Safe runtime link was retained as a link.');
+        packageTestEnsure(file_get_contents($package . DIRECTORY_SEPARATOR . 'phar') === 'binary', 'Safe runtime link was not materialized.');
+    }
+
+    if (function_exists('symlink')) {
+        $escapingNative = $testParent . DIRECTORY_SEPARATOR . 'escaping-native';
+        $escapingOutput = $outputParent . DIRECTORY_SEPARATOR . 'escaping-bin';
+        mkdir($escapingNative, 0755, true);
+        file_put_contents($testParent . DIRECTORY_SEPARATOR . 'outside', 'outside');
+        if (@symlink('..' . DIRECTORY_SEPARATOR . 'outside', $escapingNative . DIRECTORY_SEPARATOR . 'escape')) {
+            $caught = false;
+            try {
+                PackageBuilder::copyTree($escapingNative, $escapingOutput);
+            } catch (RuntimeException) {
+                $caught = true;
+            }
+            packageTestEnsure($caught, 'Escaping native runtime link was accepted.');
+        }
+    }
 
     $template = "extension_dir = \"\${BEDRIOX_RUNTIME_ROOT}/ext\"\n@BEDRIOX_DYNAMIC_EXTENSIONS@\n";
     $ini = PackageBuilder::renderIni($template, $package);

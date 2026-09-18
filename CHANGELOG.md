@@ -11,3 +11,5 @@
   libraries at the end of the Unix PHP link plan.
 - Added the manual Windows x86-64 native build and qualification path on the
   hosted Windows 2022 runner, with a fail-closed PHP SDK task boundary.
+- Materialized safe in-tree runtime file links as regular package files while
+  continuing to reject directory, broken, and escaping links.
