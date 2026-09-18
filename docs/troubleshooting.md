@@ -26,6 +26,9 @@ machine path.
 Check that the PHP extension ABI matches the packaged PHP build and that all
 native libraries are present under the package. A stock LevelDB build is not a
 drop-in replacement for the required raw-zlib and zstd-compatible fork.
+The Unix extension build supplies and verifies the complete static LevelDB
+dependency closure through phpize's `LEVELDB_SHARED_LIBADD` input; do not move
+compression or the platform C++ runtime before `libleveldb.a`.
 
 ## Unix PHP fails to link libzip Zstandard symbols
 

@@ -156,7 +156,16 @@ cp -R -p -- "$leveldb_extension_source" "$leveldb_extension_work"
 		linux-*) leveldb_dependencies='-lzstd -lz -lstdc++' ;;
 		macos-*) leveldb_dependencies='-lzstd -lz -lc++' ;;
 	esac
-	LIBS="$leveldb_dependencies" ./configure --with-php-config="$package_bin/php-config" --with-leveldb="$prefix"
+	LEVELDB_SHARED_LIBADD="$leveldb_dependencies" ./configure --with-php-config="$package_bin/php-config" --with-leveldb="$prefix"
+	leveldb_shared_libadd=$(sed -n 's/^LEVELDB_SHARED_LIBADD = //p' Makefile)
+	case "${leveldb_shared_libadd##*-lleveldb}" in
+		*'-lzstd'*'-lz'*) ;;
+		*) runtime_die "PHP LevelDB link plan does not retain its static compression dependencies" ;;
+	esac
+	case "${leveldb_shared_libadd##*-lleveldb}" in
+		*'-lstdc++'*|*'-lc++'*) ;;
+		*) runtime_die "PHP LevelDB link plan does not retain its C++ runtime dependency" ;;
+	esac
 	make -j"$jobs"
 	make install
 )

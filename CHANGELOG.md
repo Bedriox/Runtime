@@ -13,3 +13,5 @@
   hosted Windows 2022 runner, with a fail-closed PHP SDK task boundary.
 - Materialized safe in-tree runtime file links as regular package files while
   continuing to reject directory, broken, and escaping links.
+- Retained LevelDB's static compression and C++ runtime closure when linking
+  the Unix PHP extension.
