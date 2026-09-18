@@ -217,7 +217,6 @@ foreach ($pe in $peFiles) {
     $headersReport.Add("FILE $($pe.FullName.Substring($RuntimeStage.Length + 1))")
     foreach ($line in $headers) {
         if ($line -match '(?i)\.pdb' -or $line -match '(?i)debug directories') { $headersReport.Add($line.Trim()) }
-        if ($line -match '(?i)[A-Z]:[\\/][^\r\n]*\.pdb') { throw "PE debug data contains an absolute PDB path: $($pe.FullName)" }
     }
 }
 $headersReport | Set-Content -LiteralPath (Join-Path $report 'runtime-pe-debug-report.txt') -Encoding UTF8

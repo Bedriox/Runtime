@@ -42,7 +42,8 @@ windowsBuildEnsure(
     str_contains($orchestrator, '[Environment]::SetEnvironmentVariable($name, $null, \'Process\')'),
     'Native build environment variables are not cleared after the SDK task.',
 );
-windowsBuildEnsure(str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure is not bound to the verified SDK dependency tree.');
+windowsBuildEnsure(str_contains($driver, '--with-php-build="..\deps"'), 'PHP configure is not bound to the neutral reviewed SDK dependency path.');
+windowsBuildEnsure(!str_contains($driver, '--with-php-build="%PHP_BUILD%"'), 'PHP configure embeds its absolute dependency path.');
 windowsBuildEnsure(str_contains($driver, '-VcRuntimeDirectory "%VC_RUNTIME_DIR%"'), 'Runtime staging does not receive the exact active Visual C++ runtime directory.');
 windowsBuildEnsure(str_contains($stage, "'Microsoft.VC143.CRT'"), 'Runtime staging does not close Visual C++ runtime imports from the active VS17 toolchain.');
 windowsBuildEnsure(str_contains($stage, "'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'"), 'Runtime staging does not load the trusted in-box signature module explicitly.');
@@ -75,15 +76,16 @@ foreach ([
     'PE import is neither packaged nor an allowlisted Windows system DLL',
     "-notin @('.exe', '.dll')",
     'Packaged PE contains a private build path',
-    'PE debug data contains an absolute PDB path',
     '1073741824',
     'Join-Path $RuntimeStage \'leveldb.dll\'',
 ] as $required) {
     windowsBuildEnsure(str_contains($stage, $required), "Windows runtime staging contract is missing: $required");
 }
 windowsBuildEnsure(!str_contains($stage, 'GetEnvironmentVariable("PATH")'), 'Windows runtime staging falls back to PATH for native libraries.');
+windowsBuildEnsure(!str_contains($stage, 'PE debug data contains an absolute PDB path'), 'Runtime staging rejects signed Microsoft binaries for their producer PDB paths.');
 
 foreach ([
+    'for %%I in ("%PHP_SOURCE%\..\deps") do set "PHP_BUILD=%%~fI"',
     'if not exist "%ZLIB_HEADER%"',
     'if not exist "%ZLIB_LIBRARY%"',
     'if not exist "%ZSTD_HEADER%"',
@@ -118,9 +120,10 @@ windowsBuildEnsure(
     'Windows LevelDB discovery still permits broad prefix probing.',
 );
 windowsBuildEnsure(
-    str_contains($driver, '--with-leveldb=shared,"%PHP_BUILD%"'),
+    str_contains($driver, '--with-leveldb=shared'),
     'The PHP LevelDB extension is not built as a shared extension against the reviewed prefix.',
 );
+windowsBuildEnsure(!str_contains($driver, '--with-leveldb=shared,"%PHP_BUILD%"'), 'The LevelDB configure option embeds its absolute dependency path.');
 
 foreach ([
     '- windows-x86_64',
