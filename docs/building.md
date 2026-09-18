@@ -130,8 +130,10 @@ only its build-time pkg-config metadata is relocated to the isolated dependency
 stage. PHP dependency discovery uses the isolated compiler and pkg-config
 environment without placing that private prefix in PHP's recorded configure
 command.
-The pinned static libcurl pkg-config closure is passed explicitly so macOS
-keeps its required platform frameworks during PHP's link checks.
+The pinned static libcurl pkg-config closure is passed explicitly. PHP's
+configure helpers ignore `-framework` pairs in that closure, so macOS builds
+also verify the expected CoreFoundation, CoreServices, and SystemConfiguration
+metadata and retain those frameworks in PHP's link checks.
 
 ## Output roots
 
