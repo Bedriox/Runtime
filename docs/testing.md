@@ -14,8 +14,10 @@ host supports it, documentation links, and accidental build artifacts.
 
 The repository gate also runs `tests/package-test.php`, which covers bounded
 staging paths, rejection of ambient `php.ini`, target configuration rendering,
-shared-module discovery, sorted file inventory, and exclusion of manifest and
-checksum sidecars from that inventory.
+shared-module discovery, sorted file inventory, manifest exclusion, and
+rejection of checksum sidecars inside the package. `tests/package-archive-test.php`
+checks exact ZIP and tar entry/hash inventories, rejects undeclared entries,
+extracts into paths containing spaces, and verifies the Unix executable mode.
 
 ## Native package qualification
 
@@ -28,19 +30,28 @@ Every target artifact must execute tests for:
 5. ZIP creation and extraction.
 6. GMP arithmetic.
 7. UDP loopback sockets.
-8. OpenSSL and cURL with the bundled CA file.
-9. Successful validation of a trusted certificate and rejection of an invalid
-   or self-signed certificate.
+8. OpenSSL and cURL through their bundled default-ini CA configuration; cURL
+   qualification does not inject a per-request CA path.
+9. Deterministic cURL and OpenSSL rejection of an ephemeral local self-signed
+   certificate, plus real-network public-chain acceptance and certificate and
+   hostname rejection by both clients. Negative network evidence must identify a
+   verification failure; DNS, timeout, refusal, and routing failures do not
+   qualify as successful rejection tests.
 10. LevelDB CRUD, batches, close/reopen, locking, and independent uncompressed,
     raw-zlib, and zstd fixtures.
-11. Relocation of the complete package to a different absolute directory.
-12. Exact package contents, licenses, manifest, and checksums.
+11. Clean extraction of the finished archive to a different absolute directory
+    containing spaces, followed by execution with the relocated PHP and ini.
+    Missing or incorrect `BEDRIOX_RUNTIME_ROOT` values must fail the relocation
+    probe.
+12. Exact package and archive contents, licenses, manifest, and checksums. The
+    archive checksum is an adjacent sidecar and is not part of `bin` or the
+    archive itself.
 
 The runtime manifest records every source in the target's exact build closure,
 including its immutable version or commit, SHA-256, license identifier, and
 packaged `licenseFile`. Its sorted `files` map records the byte count and
-SHA-256 of every packaged file except the manifest itself and checksum
-sidecars.
+SHA-256 of every packaged file except the manifest itself. A checksum sidecar
+found inside the package is an error rather than an inventory exclusion.
 
 ## Bedriox integration
 

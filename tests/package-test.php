@@ -11,26 +11,6 @@ function packageTestEnsure(bool $condition, string $message): void
     }
 }
 
-/** @param list<string> $command */
-function packageTestProcess(array $command): int
-{
-    $pipes = [];
-    $process = proc_open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-    if (!is_resource($process)) {
-        throw new RuntimeException('Could not start archive test process.');
-    }
-    fclose($pipes[0]);
-    $stdout = stream_get_contents($pipes[1]);
-    $stderr = stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $status = proc_close($process);
-    if ($status !== 0) {
-        throw new RuntimeException('Archive helper failed: ' . trim(($stdout ?: '') . ' ' . ($stderr ?: '')));
-    }
-    return $status;
-}
-
 $root = dirname(__DIR__);
 $testParent = $root . DIRECTORY_SEPARATOR . 'build' . DIRECTORY_SEPARATOR . 'package-test-' . getmypid();
 if (!mkdir($testParent, 0755, true)) {
@@ -61,25 +41,22 @@ try {
     file_put_contents($package . DIRECTORY_SEPARATOR . 'runtime-manifest.json', '{}');
     file_put_contents($package . DIRECTORY_SEPARATOR . 'artifact.sha256', 'excluded');
 
+    $caught = false;
+    try {
+        PackageBuilder::inventory($package);
+    } catch (RuntimeException) {
+        $caught = true;
+    }
+    packageTestEnsure($caught, 'An internal checksum sidecar was accepted.');
+    unlink($package . DIRECTORY_SEPARATOR . 'artifact.sha256');
+
     $inventory = PackageBuilder::inventory($package);
     $keys = array_keys($inventory);
     $sorted = $keys;
     sort($sorted, SORT_STRING);
     packageTestEnsure($keys === $sorted, 'Inventory keys are not sorted.');
     packageTestEnsure(!isset($inventory['runtime-manifest.json']), 'Manifest inventoried itself.');
-    packageTestEnsure(!isset($inventory['artifact.sha256']), 'Checksum sidecar was inventoried.');
     packageTestEnsure(array_keys($inventory['php']) === ['bytes', 'sha256'], 'Inventory metadata shape is incorrect.');
-
-    $archiveTool = $root . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'package-archive.php';
-    $zipPath = $testParent . DIRECTORY_SEPARATOR . 'runtime.zip';
-    packageTestProcess([PHP_BINARY, $archiveTool, 'zip', $package, $zipPath]);
-    $zip = new ZipArchive();
-    packageTestEnsure($zip->open($zipPath) === true, 'Could not open package ZIP.');
-    packageTestEnsure($zip->locateName('bin/php') !== false, 'ZIP does not contain the bin layout.');
-    $zip->close();
-    $tarGzPath = $testParent . DIRECTORY_SEPARATOR . 'runtime.tar.gz';
-    packageTestProcess([PHP_BINARY, $archiveTool, 'tar.gz', $package, $tarGzPath]);
-    packageTestEnsure(is_file($tarGzPath) && filesize($tarGzPath) > 0, 'Tar package was not created.');
 
     $caught = false;
     try {

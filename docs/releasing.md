@@ -11,13 +11,16 @@ same target; do not delete an artifact merely to bypass this guard.
 
 - Review every changed source revision, hash, license, advisory, and compiler.
 - Run repository validation and the complete native target suite.
-- Verify the package after relocation to a clean directory.
+- Verify every archive entry and hash, then extract the archive to a clean path
+  containing spaces and execute its relocated PHP.
 - Run Bedriox integration for each supported target.
 - Confirm that experimental targets are clearly labelled.
 - Generate SHA-256 checksums and the runtime manifest.
 - Include all required licenses and third-party acknowledgements.
 - Confirm that archives contain no source trees, caches, logs, credentials,
   private paths, environment dumps, or signing keys.
+- Keep each `.sha256` checksum adjacent to its archive; never place it inside
+  the archived `bin/` tree.
 
 Hosted release workflows use minimal permissions and pinned actions. Expensive
 multi-platform builds are manual or release-oriented, use concurrency

@@ -96,5 +96,11 @@ configuration contains no build-machine paths.
 The finalizer detects modules actually emitted into `bin/ext`. It writes load
 directives only for those shared modules, so extensions compiled statically are
 not loaded a second time. It runs `tests/qualify.php` with the newly packaged
-PHP executable and configuration. The archive and checksum are created only
-after that qualification exits successfully.
+PHP executable and configuration. It then builds a temporary archive, compares
+every archived path, byte count, and SHA-256 to the qualified package, and
+extracts it into a clean path containing spaces. The extracted PHP must execute
+with its relocated configuration; unset or incorrect `BEDRIOX_RUNTIME_ROOT`
+values fail closed. Unix tar packages also preserve an executable `bin/php`.
+Only after these checks pass is the archive published and its adjacent
+`.sha256` sidecar written. Checksum sidecars are never stored inside `bin` or
+inside the archive.

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/PackageBuilder.php';
+require_once __DIR__ . '/PackageArchive.php';
 
 function fail(string $message): never
 {
@@ -25,6 +26,12 @@ function run(array $command, ?array $environment = null): array
     fclose($pipes[2]);
     return [proc_close($process), $stdout === false ? '' : $stdout, $stderr === false ? '' : $stderr];
 }
+
+$archivePath = null;
+$candidateArchive = null;
+$ownsArchive = false;
+$ownsCandidateArchive = false;
+$ownsChecksum = false;
 
 try {
     $options = getopt('', [
@@ -202,19 +209,101 @@ try {
     if (file_exists($archivePath) || is_link($archivePath) || file_exists($archivePath . '.sha256')) {
         throw new RuntimeException('Artifact or checksum already exists: ' . $archiveName);
     }
+    $candidateArchive = $artifactRoot . DIRECTORY_SEPARATOR . 'bedriox-runtime-' . $target . '.partial-' . getmypid() . ($format === 'zip' ? '.zip' : '.tar.gz');
+    if (file_exists($candidateArchive) || is_link($candidateArchive)) {
+        throw new RuntimeException('Temporary artifact already exists.');
+    }
+    $ownsCandidateArchive = true;
     [$archiveStatus, $archiveOutput, $archiveError] = run([
         $executable, '-c', $packageRoot . DIRECTORY_SEPARATOR . 'php.ini',
         $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'package-archive.php',
-        $format, $packageRoot, $archivePath,
+        $format, $packageRoot, $candidateArchive,
     ], $environment);
     if ($archiveStatus !== 0) {
         throw new RuntimeException('Archive creation failed: ' . trim($archiveOutput . ' ' . $archiveError));
     }
-    $archiveHash = hash_file('sha256', $archivePath);
-    if ($archiveHash === false || file_put_contents($archivePath . '.sha256', $archiveHash . '  ' . $archiveName . PHP_EOL, LOCK_EX) === false) {
-        throw new RuntimeException('Could not create artifact checksum.');
+
+    $relocationParent = $invocationRoot . DIRECTORY_SEPARATOR . 'archive relocation with spaces';
+    if (file_exists($relocationParent) || is_link($relocationParent) || !mkdir($relocationParent, 0755, false)) {
+        throw new RuntimeException('Could not create the clean relocation test parent.');
     }
+    $relocationDestination = $relocationParent . DIRECTORY_SEPARATOR . 'extracted runtime';
+    [$verifyStatus, $verifyOutput, $verifyError] = run([
+        $executable, '-c', $packageRoot . DIRECTORY_SEPARATOR . 'php.ini',
+        $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'package-verify.php',
+        '--extract-to', $relocationDestination, $format, $candidateArchive, $packageRoot,
+    ], $environment);
+    if ($verifyStatus !== 0) {
+        throw new RuntimeException('Archive verification or extraction failed: ' . trim($verifyOutput . ' ' . $verifyError));
+    }
+    $relocationRoot = $relocationDestination . DIRECTORY_SEPARATOR . 'bin';
+    if (trim($verifyOutput) !== $relocationRoot) {
+        throw new RuntimeException('Archive verifier returned an unexpected relocated runtime root.');
+    }
+
+    $relocatedExecutable = $relocationRoot . DIRECTORY_SEPARATOR . (str_starts_with($target, 'windows-') ? 'php.exe' : 'php');
+    $relocatedIni = $relocationRoot . DIRECTORY_SEPARATOR . 'php.ini';
+    $probe = $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'relocation-probe.php';
+    $relocatedEnvironment = $environment;
+    $relocatedEnvironment['BEDRIOX_RUNTIME_ROOT'] = $relocationRoot;
+    [$probeStatus, $probeOutput, $probeError] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $relocatedEnvironment);
+    if ($probeStatus !== 0) {
+        throw new RuntimeException('Relocated runtime probe failed: ' . trim($probeOutput . ' ' . $probeError));
+    }
+
+    $unsetEnvironment = $relocatedEnvironment;
+    unset($unsetEnvironment['BEDRIOX_RUNTIME_ROOT']);
+    [$unsetStatus, , $unsetError] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $unsetEnvironment);
+    if ($unsetStatus === 0 || !str_contains($unsetError, 'BEDRIOX_RUNTIME_ROOT')) {
+        throw new RuntimeException('Relocated runtime did not fail closed when BEDRIOX_RUNTIME_ROOT was unset.');
+    }
+
+    $wrongRoot = $relocationParent . DIRECTORY_SEPARATOR . 'wrong runtime root';
+    if (!mkdir($wrongRoot, 0755, false)) {
+        throw new RuntimeException('Could not create wrong-root relocation fixture.');
+    }
+    $wrongEnvironment = $relocatedEnvironment;
+    $wrongEnvironment['BEDRIOX_RUNTIME_ROOT'] = $wrongRoot;
+    [$wrongStatus, , $wrongError] = run([
+        $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
+    ], $wrongEnvironment);
+    if ($wrongStatus === 0 || !str_contains($wrongError, 'BEDRIOX_RUNTIME_ROOT')) {
+        throw new RuntimeException('Relocated runtime did not fail closed with the wrong BEDRIOX_RUNTIME_ROOT.');
+    }
+
+    [$relocatedStatus, $relocatedOutput, $relocatedError] = run([
+        $relocatedExecutable, '-c', $relocatedIni,
+        $repositoryRoot . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'qualify.php',
+        $relocationRoot,
+    ], $relocatedEnvironment);
+    echo $relocatedOutput;
+    if ($relocatedError !== '') {
+        fwrite(STDERR, $relocatedError);
+    }
+    if ($relocatedStatus !== 0) {
+        throw new RuntimeException('Extracted relocated runtime qualification failed; no artifact was published.');
+    }
+
+    PackageArchive::publish($candidateArchive, $archivePath);
+    $ownsArchive = true;
+    $ownsCandidateArchive = false;
+    $candidateArchive = null;
+    PackageArchive::writeChecksum($archivePath, $archivePath . '.sha256', $archiveName);
+    $ownsChecksum = true;
     echo 'Qualified artifact: ' . $archivePath . PHP_EOL;
 } catch (Throwable $exception) {
+    if ($ownsCandidateArchive && is_string($candidateArchive)) {
+        @unlink($candidateArchive);
+    }
+    if ($ownsArchive && is_string($archivePath)) {
+        if ($ownsChecksum) {
+            @unlink($archivePath . '.sha256');
+        }
+        @unlink($archivePath);
+    }
     fail($exception->getMessage());
 }

@@ -26,9 +26,11 @@ $requiredFiles = [
     'scripts/windows/build.ps1', 'scripts/windows/native-build.cmd',
     'scripts/windows/native-build.ps1', 'scripts/windows/RuntimeBuild.psm1',
     'tests/manifest-cli-test.php', 'tests/manifest-test.php',
-    'tests/package-test.php', 'tests/qualify.php',
+    'tests/package-archive-test.php', 'tests/package-test.php', 'tests/qualify.php',
     'tools/manifest.php', 'tools/ManifestModel.php', 'tools/package.php',
-    'tools/package-archive.php', 'tools/PackageBuilder.php',
+    'tools/package-archive.php', 'tools/PackageArchive.php',
+    'tools/package-verify.php', 'tools/PackageBuilder.php',
+    'tools/relocation-probe.php',
 ];
 foreach ($requiredFiles as $relative) {
     $path = $root . '/' . $relative;
@@ -99,6 +101,14 @@ if (is_file($packageTest)) {
     passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($packageTest), $packageStatus);
     if ($packageStatus !== 0) {
         $errors[] = 'Package builder tests failed.';
+    }
+}
+
+$packageArchiveTest = $root . '/tests/package-archive-test.php';
+if (is_file($packageArchiveTest)) {
+    passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($packageArchiveTest), $packageArchiveStatus);
+    if ($packageArchiveStatus !== 0) {
+        $errors[] = 'Package archive tests failed.';
     }
 }
 

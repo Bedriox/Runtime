@@ -90,7 +90,10 @@ final class PackageBuilder
             }
             $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($sourceReal) + 1));
             self::assertRelativePath($relative);
-            if ($relative === 'php.ini' || $relative === 'runtime-manifest.json' || str_ends_with($relative, '.sha256')) {
+            if (str_ends_with(strtolower($relative), '.sha256')) {
+                throw new RuntimeException('Native runtime contains an undeclared checksum sidecar: ' . $relative);
+            }
+            if ($relative === 'php.ini' || $relative === 'runtime-manifest.json') {
                 continue;
             }
             $target = $destination . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
@@ -159,7 +162,10 @@ final class PackageBuilder
             }
             $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($rootReal) + 1));
             self::assertRelativePath($relative);
-            if ($relative === 'runtime-manifest.json' || str_ends_with($relative, '.sha256')) {
+            if (str_ends_with(strtolower($relative), '.sha256')) {
+                throw new RuntimeException('Package contains an undeclared checksum sidecar: ' . $relative);
+            }
+            if ($relative === 'runtime-manifest.json') {
                 continue;
             }
             $digest = hash_file('sha256', $entry->getPathname());

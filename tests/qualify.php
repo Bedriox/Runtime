@@ -9,6 +9,7 @@ const REQUIRED_EXTENSIONS = [
     'zip', 'zlib',
 ];
 const EXPECTED_PHP_VERSION = '8.4.25';
+const CURL_PEER_VERIFICATION_ERROR = 60;
 
 final class Qualification
 {
@@ -229,7 +230,8 @@ function validatePackage(string $root): void
         $relative = str_replace(DIRECTORY_SEPARATOR, '/', substr($entry->getPathname(), strlen($rootReal) + 1));
         ensure(!preg_match('#(?:^|[\\\\/])(?:\.git|build|cache|downloads|sources|tests?)(?:[\\\\/]|$)#i', $relative), 'Package contains undeclared build material: ' . $relative);
         ensure(!str_ends_with(strtolower($relative), '.part'), 'Package contains an incomplete file: ' . $relative);
-        if ($relative === 'runtime-manifest.json' || str_ends_with($relative, '.sha256')) {
+        ensure(!str_ends_with(strtolower($relative), '.sha256'), 'Package contains an internal checksum sidecar: ' . $relative);
+        if ($relative === 'runtime-manifest.json') {
             continue;
         }
         $size = $entry->getSize();
@@ -300,37 +302,213 @@ function qualifyLevelDb(string $temporaryRoot): void
     }
 }
 
-function networkTlsTest(string $caFile): void
+/** @return array{resource|false, int, string, string} */
+function openSslTlsAttempt(string $host, int $port, string $peerName): array
+{
+    $warnings = [];
+    set_error_handler(static function (int $severity, string $message) use (&$warnings): bool {
+        if (($severity & E_WARNING) !== 0) {
+            $warnings[] = $message;
+            return true;
+        }
+        return false;
+    });
+    try {
+        $errorCode = 0;
+        $errorMessage = '';
+        $stream = stream_socket_client(
+            'tls://' . $host . ':' . $port,
+            $errorCode,
+            $errorMessage,
+            15,
+            STREAM_CLIENT_CONNECT,
+            stream_context_create(['ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'peer_name' => $peerName,
+                'SNI_enabled' => true,
+            ]]),
+        );
+    } finally {
+        restore_error_handler();
+    }
+
+    return [$stream, $errorCode, $errorMessage, implode("\n", $warnings)];
+}
+
+function ensureOpenSslRejected(string $host, int $port, string $peerName, string $reason): void
+{
+    [$stream, $errorCode, $errorMessage, $warnings] = openSslTlsAttempt($host, $port, $peerName);
+    if (is_resource($stream)) {
+        fclose($stream);
+        throw new RuntimeException('OpenSSL accepted a TLS peer that should fail ' . $reason . ' verification.');
+    }
+    $evidence = trim($warnings . "\n" . $errorMessage);
+    $pattern = $reason === 'hostname'
+        ? '/(?:did not match expected|subject name.*(?:does not match|mismatch)|hostname mismatch|CN_NO_MATCH|target principal name)/i'
+        : '/(?:certificate verify failed|self[- ]signed|unknown ca|unable to get (?:local )?issuer)/i';
+    ensure(
+        preg_match($pattern, $evidence) === 1,
+        sprintf('OpenSSL %s negative did not prove verification rejection (code %d): %s', $reason, $errorCode, $evidence),
+    );
+}
+
+function ensureCurlRejected(string $url, string $reason): void
+{
+    $handle = curl_init($url);
+    ensure($handle !== false, 'Could not initialize negative cURL request.');
+    curl_setopt_array($handle, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_NOBODY => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ]);
+    $result = curl_exec($handle);
+    $errorCode = curl_errno($handle);
+    $errorMessage = curl_error($handle);
+    curl_close($handle);
+    ensure($result === false, 'cURL accepted a TLS peer that should fail ' . $reason . ' verification.');
+    ensure(
+        $errorCode === CURL_PEER_VERIFICATION_ERROR,
+        sprintf('cURL %s negative failed before certificate verification (code %d): %s', $reason, $errorCode, $errorMessage),
+    );
+    $pattern = $reason === 'hostname'
+        ? '/(?:no alternative certificate subject name matches|subject name.*(?:does not match|mismatch)|CN_NO_MATCH|target principal name)/i'
+        : '/(?:self[- ]signed|unknown ca|unable to get (?:local )?issuer|certificate verify failed)/i';
+    ensure(preg_match($pattern, $errorMessage) === 1, 'cURL did not report the expected ' . $reason . ' rejection: ' . $errorMessage);
+}
+
+function networkTlsTest(): void
 {
     $handle = curl_init('https://curl.se/');
     ensure($handle !== false, 'Could not initialize cURL.');
     curl_setopt_array($handle, [
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_NOBODY => true,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 20,
-        CURLOPT_CAINFO => $caFile,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
     ]);
     $result = curl_exec($handle);
-    $error = curl_error($handle);
+    $errorCode = curl_errno($handle);
+    $errorMessage = curl_error($handle);
     $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
     curl_close($handle);
-    ensure(is_string($result) && $status >= 200 && $status < 400, 'Trusted HTTPS request failed: ' . $error);
+    ensure(
+        is_string($result) && $status >= 200 && $status < 400,
+        sprintf('Trusted cURL request failed before public-chain validation (code %d): %s', $errorCode, $errorMessage),
+    );
 
-    $handle = curl_init('https://self-signed.badssl.com/');
-    ensure($handle !== false, 'Could not initialize negative cURL request.');
-    curl_setopt_array($handle, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_TIMEOUT => 20,
-        CURLOPT_CAINFO => $caFile,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-    ]);
-    $result = curl_exec($handle);
-    curl_close($handle);
-    ensure($result === false, 'A self-signed HTTPS certificate was accepted.');
+    [$stream, $errorCode, $errorMessage, $warnings] = openSslTlsAttempt('curl.se', 443, 'curl.se');
+    ensure(
+        is_resource($stream),
+        sprintf('Trusted OpenSSL stream failed before public-chain validation (code %d): %s', $errorCode, trim($warnings . "\n" . $errorMessage)),
+    );
+    fclose($stream);
+
+    ensureCurlRejected('https://self-signed.badssl.com/', 'certificate');
+    ensureCurlRejected('https://wrong.host.badssl.com/', 'hostname');
+    ensureOpenSslRejected('self-signed.badssl.com', 443, 'self-signed.badssl.com', 'certificate');
+    ensureOpenSslRejected('wrong.host.badssl.com', 443, 'wrong.host.badssl.com', 'hostname');
+}
+
+function reserveLoopbackPort(): int
+{
+    $errorCode = 0;
+    $errorMessage = '';
+    $socket = @stream_socket_server('tcp://127.0.0.1:0', $errorCode, $errorMessage);
+    ensure(is_resource($socket), 'Could not reserve a local TLS witness port: ' . $errorCode);
+    $address = stream_socket_get_name($socket, false);
+    fclose($socket);
+    ensure(is_string($address) && preg_match('/:(\d+)$/D', $address, $matches) === 1, 'Could not read local TLS witness port.');
+    return (int) $matches[1];
+}
+
+function localUntrustedTlsTest(string $temporaryRoot): void
+{
+    $opensslConfig = $temporaryRoot . DIRECTORY_SEPARATOR . 'local-tls-openssl.cnf';
+    $certificatePath = $temporaryRoot . DIRECTORY_SEPARATOR . 'local-tls-certificate.pem';
+    $privateKeyPath = $temporaryRoot . DIRECTORY_SEPARATOR . 'local-tls-private-key.pem';
+    $readyPath = $temporaryRoot . DIRECTORY_SEPARATOR . 'local-tls-ready';
+    $configuration = <<<'INI'
+[req]
+distinguished_name = subject
+prompt = no
+x509_extensions = server
+
+[subject]
+CN = localhost
+
+[server]
+subjectAltName = DNS:localhost
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+INI;
+    ensure(file_put_contents($opensslConfig, $configuration, LOCK_EX) !== false, 'Could not create local TLS OpenSSL configuration.');
+
+    $options = [
+        'config' => $opensslConfig,
+        'digest_alg' => 'sha256',
+        'private_key_bits' => 2048,
+        'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        'x509_extensions' => 'server',
+    ];
+    $privateKey = openssl_pkey_new($options);
+    ensure($privateKey instanceof OpenSSLAsymmetricKey, 'Could not create temporary local TLS key.');
+    $request = openssl_csr_new(['commonName' => 'localhost'], $privateKey, $options);
+    ensure($request instanceof OpenSSLCertificateSigningRequest, 'Could not create temporary local TLS request.');
+    $certificate = openssl_csr_sign($request, null, $privateKey, 1, $options, 1);
+    ensure($certificate instanceof OpenSSLCertificate, 'Could not create temporary local TLS certificate.');
+    ensure(openssl_x509_export($certificate, $certificatePem), 'Could not export temporary local TLS certificate.');
+    ensure(openssl_pkey_export($privateKey, $privateKeyPem, null, $options), 'Could not export temporary local TLS key.');
+    ensure(file_put_contents($certificatePath, $certificatePem, LOCK_EX) !== false, 'Could not write temporary local TLS certificate.');
+    ensure(file_put_contents($privateKeyPath, $privateKeyPem, LOCK_EX) !== false, 'Could not write temporary local TLS key.');
+    @chmod($privateKeyPath, 0600);
+
+    $port = reserveLoopbackPort();
+    $helper = __DIR__ . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'local-tls-server.php';
+    $pipes = [];
+    $process = proc_open(
+        phpCommand([$helper, $certificatePath, $privateKeyPath, $readyPath, (string) $port]),
+        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+    ensure(is_resource($process), 'Could not start local TLS witness.');
+    fclose($pipes[0]);
+    try {
+        $deadline = microtime(true) + 5.0;
+        while (!is_file($readyPath) && microtime(true) < $deadline) {
+            $status = proc_get_status($process);
+            ensure($status['running'], 'Local TLS witness stopped before becoming ready.');
+            usleep(10_000);
+        }
+        ensure(is_file($readyPath), 'Local TLS witness did not become ready.');
+        ensureOpenSslRejected('127.0.0.1', $port, 'localhost', 'certificate');
+        ensureCurlRejected('https://127.0.0.1:' . $port . '/', 'certificate');
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
+        ensure($status === 0, 'Local TLS witness failed: ' . trim(($stdout ?: '') . ' ' . ($stderr ?: '')));
+    } finally {
+        if (is_resource($process)) {
+            $status = proc_get_status($process);
+            if ($status['running']) {
+                proc_terminate($process);
+            }
+            foreach ([1, 2] as $pipe) {
+                if (isset($pipes[$pipe]) && is_resource($pipes[$pipe])) {
+                    fclose($pipes[$pipe]);
+                }
+            }
+            proc_close($process);
+        }
+    }
 }
 
 $arguments = $argv;
@@ -444,24 +622,25 @@ try {
         }
     });
 
-    $caFile = null;
-    $qualification->run('OpenSSL and cURL CA configuration', static function () use (&$caFile, $resolvedPackageRoot): void {
+    $qualification->run('OpenSSL and cURL CA configuration', static function () use ($resolvedPackageRoot): void {
         $opensslCa = configuredCaFile('openssl.cafile', $resolvedPackageRoot);
         $curlCa = configuredCaFile('curl.cainfo', $resolvedPackageRoot);
         ensure($opensslCa === $curlCa, 'OpenSSL and cURL use different CA bundles.');
         $contents = readFileStrict($opensslCa);
         ensure(str_contains($contents, '-----BEGIN CERTIFICATE-----') && strlen($contents) > 100_000, 'CA bundle is missing or implausibly small.');
         ensure(openssl_x509_read($contents) !== false, 'OpenSSL could not parse the first certificate in the CA bundle.');
-        $caFile = $opensslCa;
+    });
+
+    $qualification->run('local untrusted TLS certificate rejection through default ini', static function () use ($temporaryRoot): void {
+        localUntrustedTlsTest($temporaryRoot);
     });
 
     if ($testNetworkTls) {
-        $qualification->run('trusted and self-signed network TLS behavior', static function () use (&$caFile): void {
-            ensure(is_string($caFile), 'CA configuration did not pass.');
-            networkTlsTest($caFile);
+        $qualification->run('public-chain and invalid network TLS behavior through default ini', static function (): void {
+            networkTlsTest();
         });
     } else {
-        $qualification->skip('trusted and self-signed network TLS behavior', 'run explicitly with --network-tls');
+        $qualification->skip('public-chain and invalid network TLS behavior through default ini', 'run explicitly with --network-tls');
     }
 
     if (extension_loaded('leveldb')) {
