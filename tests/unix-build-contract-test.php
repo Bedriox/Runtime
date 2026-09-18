@@ -41,6 +41,8 @@ foreach ([
     "grep -q 'LC_RPATH'",
     'for private_root_kind in build source repository download',
     'grep -F "$private_root" "$strings_report"',
+    'sanitized private path witness:',
+    "str_replace(\$root, '<private-'",
     'runtime binary contains a private $private_root_kind path',
     '--source-root="$runtime_stage"',
 ] as $required) {

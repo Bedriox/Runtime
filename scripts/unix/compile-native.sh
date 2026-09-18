@@ -277,6 +277,25 @@ for binary in "$runtime_stage/php" "$runtime_stage"/ext/*; do
 			download) private_root=$download_root ;;
 		esac
 		if grep -F "$private_root" "$strings_report" >/dev/null; then
+			"$package_bin/php" -n -r '
+$contents = file($argv[1], FILE_IGNORE_NEW_LINES);
+if ($contents === false) {
+    fwrite(STDERR, "error: could not read the binary strings report\n");
+    exit(1);
+}
+$needle = $argv[2];
+$roots = array_slice($argv, 3);
+foreach ($contents as $line) {
+    if (!str_contains($line, $needle)) {
+        continue;
+    }
+    foreach ($roots as $index => $root) {
+        $line = str_replace($root, '<private-' . ['build', 'source', 'repository', 'download'][$index] . '-root>', $line);
+    }
+    fwrite(STDERR, 'sanitized private path witness: ' . substr($line, 0, 512) . "\n");
+    break;
+}
+' "$strings_report" "$private_root" "$build_root" "$source_root" "$repository_root" "$download_root"
 			runtime_die "runtime binary contains a private $private_root_kind path: $binary_name"
 		fi
 	done

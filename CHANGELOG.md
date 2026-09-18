@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Sanitized Unix native-build path diagnostics now identify the embedded-path producer without exposing private runner directories.
+
 - Established the Runtime build, dependency, packaging, qualification, and
   release foundation for PHP 8.4.
 - Hardened Windows packaging with a neutral compiled PHP prefix, an
