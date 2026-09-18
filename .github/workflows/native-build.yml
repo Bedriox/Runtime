@@ -71,12 +71,12 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Check out source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
 
       - name: Use PHP 8.4 for repository tooling
-        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # Node.js 24 revision
         with:
           php-version: '8.4'
           coverage: none
