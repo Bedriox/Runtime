@@ -9,11 +9,12 @@ checksums, and third-party notices.
 
 It does not own Bedriox gameplay, world formats, Bedrock packets, RakNet, or
 server configuration. Keep server integration in `Bedriox`, protocol behavior
-in `Protocol`, registries in `Data`, and architectural decisions in `RFCs`.
+in `Protocol`, registries in `Data`, and architectural decisions in reviewed
+design proposals.
 
-Follow RFC 0017. Do not add a source, extension, target, compiler, patch, or
-release capability that is absent from the accepted decision without first
-amending or superseding it.
+Do not add a source, extension, target, compiler, patch, or release capability
+that is absent from the accepted Runtime architecture without first obtaining
+an approved design change.
 
 ## Repository layout
 

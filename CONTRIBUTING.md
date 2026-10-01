@@ -5,7 +5,7 @@ is only the beginning of review.
 
 Before changing a dependency, compiler, extension, configuration value, or
 package path, read `AGENTS.md`, the relevant document under `docs/`, and
-[RFC 0017](https://github.com/Bedriox/RFCs/blob/main/rfcs/0017-runtime-distribution.md).
+the Runtime architecture and release documentation in this repository.
 
 Keep each change focused. Pin all new external inputs, record their SHA-256
 digests and licenses, add failure coverage, and run:
