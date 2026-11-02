@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/tools/UstarArchive.php';
 const REQUIRED_EXTENSIONS = [
     'ctype', 'curl', 'dom', 'fileinfo', 'filter', 'gmp', 'hash', 'iconv', 'json', 'libxml',
     'mbstring', 'openssl', 'pdo', 'pdo_sqlite', 'phar', 'session', 'simplexml',
-    'sockets', 'sodium', 'sqlite3', 'tokenizer', 'xml', 'xmlreader', 'xmlwriter',
+    'sockets', 'sodium', 'sqlite3', 'tokenizer', 'webrtc', 'xml', 'xmlreader', 'xmlwriter',
     'zip', 'zlib',
 ];
 const EXPECTED_PHP_VERSION = '8.4.25';
@@ -197,7 +197,7 @@ function validatePackage(string $root): void
         ensure(in_array($machine, ['aarch64', 'arm64'], true), 'Runtime manifest ARM64 target does not match architecture ' . $machine . '.');
     }
     ensure(is_array($manifest['sources']) && $manifest['sources'] !== [], 'Runtime manifest has no source inventory.');
-    foreach (['php', 'leveldb', 'php-leveldb', 'ca-bundle'] as $source) {
+    foreach (['php', 'leveldb', 'php-leveldb', 'libdatachannel', 'libjuice', 'plog', 'usrsctp', 'ext-webrtc', 'ca-bundle'] as $source) {
         ensure(isset($manifest['sources'][$source]) && is_array($manifest['sources'][$source]), 'Runtime manifest is missing source ' . $source . '.');
         ensure(preg_match('/^[0-9a-f]{64}$/D', (string) ($manifest['sources'][$source]['sha256'] ?? '')) === 1, $source . ' has an invalid digest.');
         ensure(is_string($manifest['sources'][$source]['license'] ?? null), $source . ' has no license declaration.');
@@ -680,6 +680,14 @@ try {
             ensure(ini_get('opcache.file_cache_fallback') === '1', 'Windows OPcache file-cache fallback is disabled.');
         }
         ensure(class_exists(SQLite3::class) && class_exists(ZipArchive::class), 'Required extension classes are unavailable.');
+        ensure(class_exists(\pmmp\webrtc\PeerConnection::class), 'WebRTC peer connection API is unavailable.');
+        $options = \pmmp\webrtc\PeerConnectionOptions::create()
+            ->setMaxReceiveQueueSize(2_560_000)
+            ->setMaxReceiveQueueMessages(512)
+            ->setMaxSendQueueSize(4_194_304)
+            ->setMaxRemoteDescriptionSize(1_048_576)
+            ->setMaxPendingDataChannels(4);
+        ensure($options->getMaxReceiveQueueSize() === 2_560_000, 'WebRTC receive queue limit was not retained.');
     });
 
     $qualification->run('signed PHAR creation and execution', static function () use ($temporaryRoot): void {

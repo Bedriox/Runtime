@@ -26,6 +26,11 @@ $variables = [
     'BEDRIOX_NATIVE_PHP_DEPS_SOURCE',
     'BEDRIOX_NATIVE_LEVELDB_SOURCE',
     'BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE',
+    'BEDRIOX_NATIVE_LIBDATACHANNEL_SOURCE',
+    'BEDRIOX_NATIVE_LIBJUICE_SOURCE',
+    'BEDRIOX_NATIVE_PLOG_SOURCE',
+    'BEDRIOX_NATIVE_USRSCTP_SOURCE',
+    'BEDRIOX_NATIVE_WEBRTC_EXTENSION_SOURCE',
     'BEDRIOX_NATIVE_WORK_ROOT',
     'BEDRIOX_NATIVE_RUNTIME_STAGE',
     'BEDRIOX_NATIVE_CMAKE_EXE',
@@ -79,7 +84,7 @@ windowsBuildEnsure(str_contains($driver, 'if errorlevel 1 (popd & exit /b 38)'),
 windowsBuildEnsure(str_contains($driver, 'nmake snap'), 'Windows does not produce the upstream runtime snapshot.');
 windowsBuildEnsure(!str_contains($driver, 'nmake install'), 'Windows still installs the complete PHP development tree.');
 windowsBuildEnsure(!str_contains($driver, '--with-prefix="%'), 'Windows embeds an invocation-specific PHP prefix.');
-$expectedConfigure = 'call configure.bat --disable-all --enable-cli --enable-zts --enable-ctype --with-dom --enable-fileinfo --enable-filter --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --with-simplexml --enable-sockets --enable-tokenizer --with-xml --enable-xmlreader --enable-xmlwriter --enable-zlib --enable-zip --with-prefix=bedriox-runtime --with-php-build="..\deps" --with-iconv --with-libxml --with-openssl --with-curl --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared';
+$expectedConfigure = 'call configure.bat --disable-all --enable-cli --enable-zts --enable-ctype --with-dom --enable-fileinfo --enable-filter --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --with-simplexml --enable-sockets --enable-tokenizer --with-xml --enable-xmlreader --enable-xmlwriter --enable-zlib --enable-zip --with-prefix=bedriox-runtime --with-php-build="..\deps" --with-iconv --with-libxml --with-openssl --with-curl --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared --enable-webrtc=shared --with-libdatachannel="..\deps"';
 windowsBuildEnsure(str_contains($driver, $expectedConfigure), 'Windows PHP configure options differ from the reviewed PHP 8.4.25 contract.');
 
 foreach ([
@@ -136,6 +141,28 @@ windowsBuildEnsure(
     'The PHP LevelDB extension is not built as a shared extension against the reviewed prefix.',
 );
 windowsBuildEnsure(!str_contains($driver, '--with-leveldb=shared,"%PHP_BUILD%"'), 'The LevelDB configure option embeds its absolute dependency path.');
+
+foreach ([
+    'xcopy "%LIBDATACHANNEL_SOURCE%\*" "%LIBDATACHANNEL_WORK%\"',
+    'xcopy "%LIBJUICE_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\libjuice\"',
+    'xcopy "%PLOG_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\plog\"',
+    'xcopy "%USRSCTP_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\usrsctp\"',
+    '-DataChannelDll "%PHP_BUILD%\bin\datachannel.dll"',
+    '-DNO_EXAMPLES=ON',
+    '-DNO_TESTS=ON',
+    '-DNO_MEDIA=ON',
+    '-DNO_WEBSOCKET=ON',
+    'set "CL=/experimental:deterministic /pathmap:%WORK_ROOT%=. %CL%"',
+    'if not exist "%PHP_BUILD%\bin\datachannel.dll"',
+    'if not exist "%RUNTIME_STAGE%\ext\php_webrtc.dll"',
+] as $required) {
+    windowsBuildEnsure(str_contains($driver, $required), "Windows NetherNet runtime closure is missing: $required");
+}
+windowsBuildEnsure(
+    str_contains($driver, 'if not exist "%LIBDATACHANNEL_WORK%\deps" mkdir "%LIBDATACHANNEL_WORK%\deps" || exit /b 91'),
+    'The Windows build must accept libdatachannel source trees that already contain their deps directory.',
+);
+windowsBuildEnsure(str_contains($stage, '$DataChannelDll'), 'Windows runtime staging does not admit the reviewed libdatachannel DLL.');
 
 foreach ([
     '- windows-x86_64',

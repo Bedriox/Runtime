@@ -28,7 +28,7 @@ function run(array $command, ?array $environment = null): array
 }
 
 /** @return array<string, string> */
-function qualificationEnvironment(string $runtimeRoot): array
+function qualificationEnvironment(string $runtimeRoot, string $target): array
 {
     $cacheRoot = dirname($runtimeRoot) . DIRECTORY_SEPARATOR . 'runtime-cache';
     $opcodeCache = $cacheRoot . DIRECTORY_SEPARATOR . 'opcache';
@@ -41,6 +41,8 @@ function qualificationEnvironment(string $runtimeRoot): array
         'BEDRIOX_RUNTIME_CACHE',
         'BEDRIOX_RUNTIME_ROOT',
         'CURL_CA_BUNDLE',
+        'DYLD_LIBRARY_PATH',
+        'LD_LIBRARY_PATH',
         'OPENSSL_CONF',
         'OPENSSL_MODULES',
         'SSL_CERT_DIR',
@@ -54,6 +56,11 @@ function qualificationEnvironment(string $runtimeRoot): array
     $environment['BEDRIOX_RUNTIME_ROOT'] = $runtimeRoot;
     $environment['BEDRIOX_RUNTIME_CACHE'] = $cacheRoot;
     $environment['OPENSSL_CONF'] = $runtimeRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    if (str_starts_with($target, 'linux-')) {
+        $environment['LD_LIBRARY_PATH'] = $runtimeRoot . DIRECTORY_SEPARATOR . 'lib';
+    } elseif (str_starts_with($target, 'macos-')) {
+        $environment['DYLD_LIBRARY_PATH'] = $runtimeRoot . DIRECTORY_SEPARATOR . 'lib';
+    }
     return $environment;
 }
 
@@ -228,7 +235,7 @@ try {
         throw new RuntimeException('Could not write runtime manifest.');
     }
 
-    $environment = qualificationEnvironment($packageRoot);
+    $environment = qualificationEnvironment($packageRoot, $target);
     [$qualificationStatus, $qualificationOutput, $qualificationError] = run([
         $executable, '-c', $packageRoot . DIRECTORY_SEPARATOR . 'php.ini',
         $repositoryRoot . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'qualify.php',
@@ -283,7 +290,7 @@ try {
     $relocatedExecutable = $relocationRoot . DIRECTORY_SEPARATOR . (str_starts_with($target, 'windows-') ? 'php.exe' : 'php');
     $relocatedIni = $relocationRoot . DIRECTORY_SEPARATOR . 'php.ini';
     $probe = $repositoryRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'relocation-probe.php';
-    $relocatedEnvironment = qualificationEnvironment($relocationRoot);
+    $relocatedEnvironment = qualificationEnvironment($relocationRoot, $target);
     [$probeStatus, $probeOutput, $probeError] = run([
         $relocatedExecutable, '-c', $relocatedIni, $probe, $relocationRoot,
     ], $relocatedEnvironment);

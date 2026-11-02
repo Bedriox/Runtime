@@ -11,9 +11,15 @@ function unixBuildEnsure(bool $condition, string $message): void
 
 $root = dirname(__DIR__);
 $compiler = file_get_contents($root . '/scripts/unix/compile-native.sh');
+$downloader = file_get_contents($root . '/scripts/unix/download-sources.sh');
+$extractor = file_get_contents($root . '/scripts/unix/extract-sources.sh');
 $preflight = file_get_contents($root . '/scripts/unix/preflight.sh');
+$packager = file_get_contents($root . '/tools/package.php');
 $workflow = file_get_contents($root . '/.github/workflows/native-build.yml');
-unixBuildEnsure(is_string($compiler) && is_string($preflight) && is_string($workflow), 'Unix build contract inputs could not be read.');
+unixBuildEnsure(
+    is_string($compiler) && is_string($downloader) && is_string($extractor) && is_string($preflight) && is_string($packager) && is_string($workflow),
+    'Unix build contract inputs could not be read.',
+);
 unixBuildEnsure(str_contains($workflow, "if: runner.os != 'macOS'\n        uses: shivammathur/setup-php@"), 'macOS still uses the failing generic PHP bootstrap action.');
 unixBuildEnsure(str_contains($workflow, 'brew install php@8.4 autoconf automake bison cmake libtool pkg-config re2c'), 'macOS does not install its PHP 8.4 bootstrap with the native Homebrew toolchain.');
 unixBuildEnsure(str_contains($workflow, 'echo "$(brew --prefix php@8.4)/bin" >> "$GITHUB_PATH"'), 'macOS does not expose the pinned PHP 8.4 bootstrap to later build steps.');
@@ -83,8 +89,47 @@ foreach ([
     'str_replace($root, "<private-"',
     'runtime binary contains a private $private_root_kind path',
     '--source-root="$runtime_stage"',
+    'libdatachannel_source=$(source_path libdatachannel)',
+    'rm -rf -- "$libdatachannel_work/deps/libjuice" "$libdatachannel_work/deps/plog" "$libdatachannel_work/deps/usrsctp"',
+    'cp -R -p -- "$(source_path libjuice)" "$libdatachannel_work/deps/libjuice"',
+    'cp -R -p -- "$(source_path plog)" "$libdatachannel_work/deps/plog"',
+    'cp -R -p -- "$(source_path usrsctp)" "$libdatachannel_work/deps/usrsctp"',
+    '-DNO_EXAMPLES=ON',
+    '-DNO_TESTS=ON',
+    '-DNO_MEDIA=ON',
+    '-DNO_WEBSOCKET=ON',
+    '[ -f "$prefix/lib/libssl.a" ] || runtime_die "pinned OpenSSL SSL archive is missing"',
+    '[ -f "$prefix/lib/libcrypto.a" ] || runtime_die "pinned OpenSSL crypto archive is missing"',
+    '-DOPENSSL_USE_STATIC_LIBS=TRUE',
+    '-DOPENSSL_SSL_LIBRARY=$prefix/lib/libssl.a',
+    '-DOPENSSL_CRYPTO_LIBRARY=$prefix/lib/libcrypto.a',
+    '-DOPENSSL_INCLUDE_DIR=$prefix/include',
+    "grep -F 'PHP_ADD_LIBRARY_WITH_PATH([datachannel], [\$PHP_LIBDATACHANNEL/lib], [WEBRTC_SHARED_LIBADD])'",
+    "PHP_ADD_LIBRARY([datachannel], [1], [WEBRTC_SHARED_LIBADD])",
+    'LDFLAGS="-L$prefix/lib"',
+    './configure --with-php-config="$build_php_config" --enable-webrtc --with-libdatachannel="$prefix"',
+    'cp -- "$extension_dir/webrtc.so" "$package_bin/ext/webrtc.so"',
+    'libdatachannel runtime library is missing',
 ] as $required) {
     unixBuildEnsure(str_contains($compiler, $required), 'Unix native build is missing hardening contract: ' . $required);
+}
+
+foreach (['libdatachannel', 'libjuice', 'plog', 'usrsctp', 'ext-webrtc'] as $webRtcSource) {
+    unixBuildEnsure(
+        preg_match("/source_ids='[^']*\\b" . preg_quote($webRtcSource, '/') . "\\b[^']*'/", $downloader) === 1,
+        'Unix source download closure omits WebRTC input: ' . $webRtcSource,
+    );
+    unixBuildEnsure(
+        preg_match("/source_ids='[^']*\\b" . preg_quote($webRtcSource, '/') . "\\b[^']*'/", $extractor) === 1,
+        'Unix source extraction closure omits WebRTC input: ' . $webRtcSource,
+    );
+}
+
+foreach (['LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH'] as $libraryPathVariable) {
+    unixBuildEnsure(
+        str_contains($packager, "\$environment['" . $libraryPathVariable . "'] = \$runtimeRoot . DIRECTORY_SEPARATOR . 'lib';"),
+        'Packaged runtime qualification does not expose its private library directory through ' . $libraryPathVariable . '.',
+    );
 }
 
 $gmpBlockStart = strpos($compiler, 'gmp_source=$(source_path gmp)');

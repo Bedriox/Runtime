@@ -21,7 +21,7 @@ trap 'cleanup_extraction; exit 129' HUP
 trap 'cleanup_extraction; exit 130' INT
 trap 'cleanup_extraction; exit 143' TERM
 
-source_ids='php zlib gmp libiconv curl openssl libzip sqlite zstd leveldb php-leveldb libsodium libxml2 oniguruma'
+source_ids='php zlib gmp libiconv curl openssl libzip sqlite zstd leveldb php-leveldb libdatachannel libjuice plog usrsctp ext-webrtc libsodium libxml2 oniguruma'
 for source_id in $source_ids; do
 	url=$(php "$repository_root/tools/manifest.php" source "$source_id" url)
 	digest=$(php "$repository_root/tools/manifest.php" source "$source_id" sha256)

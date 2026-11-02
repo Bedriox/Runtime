@@ -10,7 +10,7 @@ immutable manifest
     -> toolchain preflight
     -> verified download cache
     -> isolated source and build trees
-    -> staged PHP and native extensions
+    -> staged PHP, native extensions, and the libdatachannel runtime closure
     -> package configuration and licenses
     -> native qualification
     -> checksums and release artifact

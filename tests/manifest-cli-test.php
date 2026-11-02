@@ -29,7 +29,7 @@ $cases = [
     [['source', 'php', 'bytes'], 0, "13759432\n"],
     [['source', 'php-sdk-binary-tools', 'archiveType'], 0, "zip\n"],
     [['source', 'php-sdk-dep-libcurl', 'targets'], 0, "[\"windows-x86_64\"]\n"],
-    [['closure', 'windows-x86_64'], 0, "[\"php\",\"leveldb\",\"php-leveldb\",\"ca-bundle\",\"php-sdk-binary-tools\",\"cmake-windows-x86_64\",\"php-sdk-dep-brotli\",\"php-sdk-dep-libbzip2\",\"php-sdk-dep-libcurl\",\"php-sdk-dep-libiconv\",\"php-sdk-dep-liblzma\",\"php-sdk-dep-libonig\",\"php-sdk-dep-libsodium\",\"php-sdk-dep-libssh2\",\"php-sdk-dep-libzip\",\"php-sdk-dep-libzstd\",\"php-sdk-dep-libxml2\",\"php-sdk-dep-mpir\",\"php-sdk-dep-nghttp2\",\"php-sdk-dep-openssl\",\"php-sdk-dep-sqlite3\",\"php-sdk-dep-zlib\"]\n"],
+    [['closure', 'windows-x86_64'], 0, "[\"php\",\"leveldb\",\"php-leveldb\",\"libdatachannel\",\"libjuice\",\"plog\",\"usrsctp\",\"ext-webrtc\",\"ca-bundle\",\"php-sdk-binary-tools\",\"cmake-windows-x86_64\",\"php-sdk-dep-brotli\",\"php-sdk-dep-libbzip2\",\"php-sdk-dep-libcurl\",\"php-sdk-dep-libiconv\",\"php-sdk-dep-liblzma\",\"php-sdk-dep-libonig\",\"php-sdk-dep-libsodium\",\"php-sdk-dep-libssh2\",\"php-sdk-dep-libzip\",\"php-sdk-dep-libzstd\",\"php-sdk-dep-libxml2\",\"php-sdk-dep-mpir\",\"php-sdk-dep-nghttp2\",\"php-sdk-dep-openssl\",\"php-sdk-dep-sqlite3\",\"php-sdk-dep-zlib\"]\n"],
     [['targets'], 0, "[\"windows-x86_64\",\"linux-x86_64\",\"linux-arm64\",\"macos-x86_64\",\"macos-arm64\",\"windows-arm64\"]\n"],
 ];
 

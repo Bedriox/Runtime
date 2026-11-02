@@ -363,6 +363,64 @@ done
 	make install LEVELDB_SHARED_LIBADD="$leveldb_link_closure"
 )
 
+libdatachannel_source=$(source_path libdatachannel)
+libdatachannel_work="$build_root/build-libdatachannel-source"
+cp -R -p -- "$libdatachannel_source" "$libdatachannel_work"
+mkdir -p -- "$libdatachannel_work/deps"
+rm -rf -- "$libdatachannel_work/deps/libjuice" "$libdatachannel_work/deps/plog" "$libdatachannel_work/deps/usrsctp"
+cp -R -p -- "$(source_path libjuice)" "$libdatachannel_work/deps/libjuice"
+cp -R -p -- "$(source_path plog)" "$libdatachannel_work/deps/plog"
+cp -R -p -- "$(source_path usrsctp)" "$libdatachannel_work/deps/usrsctp"
+libdatachannel_build="$build_root/build-libdatachannel"
+libdatachannel_openssl_arguments=
+case "$target" in
+	macos-*)
+		[ -f "$prefix/lib/libssl.a" ] || runtime_die "pinned OpenSSL SSL archive is missing"
+		[ -f "$prefix/lib/libcrypto.a" ] || runtime_die "pinned OpenSSL crypto archive is missing"
+		libdatachannel_openssl_arguments="-DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_SSL_LIBRARY=$prefix/lib/libssl.a -DOPENSSL_CRYPTO_LIBRARY=$prefix/lib/libcrypto.a -DOPENSSL_INCLUDE_DIR=$prefix/include"
+		;;
+esac
+# The guarded macOS values contain only build-root paths created above.
+# shellcheck disable=SC2086
+cmake -S "$libdatachannel_work" -B "$libdatachannel_build" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX="$prefix" \
+	-DCMAKE_INSTALL_LIBDIR=lib \
+	-DCMAKE_PREFIX_PATH="$prefix" \
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+	-DCMAKE_C_FLAGS="$runtime_cflags" \
+	-DCMAKE_CXX_FLAGS="$runtime_cflags" \
+	-DBUILD_SHARED_LIBS=ON \
+	-DBUILD_SHARED_DEPS_LIBS=OFF \
+	-DNO_EXAMPLES=ON \
+	-DNO_TESTS=ON \
+	-DNO_MEDIA=ON \
+	-DNO_WEBSOCKET=ON \
+	-DOPENSSL_ROOT_DIR="$prefix" \
+	$libdatachannel_openssl_arguments
+cmake --build "$libdatachannel_build" --parallel "$jobs"
+cmake --install "$libdatachannel_build"
+
+webrtc_extension_source=$(source_path ext-webrtc)
+webrtc_extension_work="$build_root/build-ext-webrtc"
+cp -R -p -- "$webrtc_extension_source" "$webrtc_extension_work"
+webrtc_config_m4="$webrtc_extension_work/config.m4"
+grep -F 'PHP_ADD_LIBRARY_WITH_PATH([datachannel], [$PHP_LIBDATACHANNEL/lib], [WEBRTC_SHARED_LIBADD])' "$webrtc_config_m4" >/dev/null \
+	|| runtime_die "WebRTC extension link declaration does not match the reviewed source"
+sed -i.bedriox \
+	's|PHP_ADD_LIBRARY_WITH_PATH(\[datachannel\], \[\$PHP_LIBDATACHANNEL/lib\], \[WEBRTC_SHARED_LIBADD\])|PHP_ADD_LIBRARY([datachannel], [1], [WEBRTC_SHARED_LIBADD])|' \
+	"$webrtc_config_m4"
+grep -F 'PHP_ADD_LIBRARY([datachannel], [1], [WEBRTC_SHARED_LIBADD])' "$webrtc_config_m4" >/dev/null \
+	|| runtime_die "WebRTC extension link declaration could not be made relocatable"
+(
+	cd "$webrtc_extension_work"
+	"$build_phpize"
+	CFLAGS="$runtime_cflags" CXXFLAGS="$runtime_cflags" LDFLAGS="-L$prefix/lib" \
+		./configure --with-php-config="$build_php_config" --enable-webrtc --with-libdatachannel="$prefix"
+	make -j"$jobs"
+	make install
+)
+
 ca_url=$(php "$repository_root/tools/manifest.php" source ca-bundle url)
 ca_file=${ca_url%%\?*}
 ca_file=${ca_file##*/}
@@ -372,20 +430,36 @@ ca_path="$download_root/ca-bundle-$ca_file"
 extension_dir=$($build_php_config --extension-dir)
 mkdir -p -- "$package_bin/ext"
 cp -- "$extension_dir/leveldb.so" "$package_bin/ext/leveldb.so"
+cp -- "$extension_dir/webrtc.so" "$package_bin/ext/webrtc.so"
 if [ -f "$extension_dir/opcache.so" ]; then
 	cp -- "$extension_dir/opcache.so" "$package_bin/ext/opcache.so"
 fi
 
 runtime_stage="$build_root/runtime-stage"
-mkdir -p -- "$runtime_stage/ext"
+mkdir -p -- "$runtime_stage/ext" "$runtime_stage/lib"
 cp -- "$package_bin/php" "$runtime_stage/php"
 chmod 0755 "$runtime_stage/php"
 for extension in "$package_bin"/ext/*; do
 	[ -f "$extension" ] || runtime_die "runtime extension stage is empty"
 	cp -- "$extension" "$runtime_stage/ext/${extension##*/}"
 done
+case "$target" in
+	linux-*)
+		for library in "$prefix"/lib/libdatachannel.so*; do
+			[ -f "$library" ] || continue
+			cp -P -- "$library" "$runtime_stage/lib/${library##*/}"
+		done
+		;;
+	macos-*)
+		for library in "$prefix"/lib/libdatachannel*.dylib; do
+			[ -f "$library" ] || continue
+			cp -P -- "$library" "$runtime_stage/lib/${library##*/}"
+		done
+		;;
+esac
+[ "$(find "$runtime_stage/lib" -type f -o -type l | wc -l | tr -d ' ')" -gt 0 ] || runtime_die "libdatachannel runtime library is missing"
 
-for binary in "$runtime_stage/php" "$runtime_stage"/ext/*; do
+for binary in "$runtime_stage/php" "$runtime_stage"/ext/* "$runtime_stage"/lib/*; do
 	binary_name=${binary##*/}
 	dynamic_report="$build_root/dynamic-$binary_name.txt"
 	strings_report="$build_root/strings-$binary_name.txt"
@@ -452,7 +526,7 @@ mkdir -p -- "$artifact_root"
 package_parent="$build_root/package"
 mkdir -p -- "$package_parent"
 package_root="$package_parent/bin"
-source_ids='php,leveldb,php-leveldb,ca-bundle,libsodium,libxml2,oniguruma,zlib,gmp,libiconv,curl,openssl,libzip,sqlite,zstd'
+source_ids='php,leveldb,php-leveldb,libdatachannel,libjuice,plog,usrsctp,ext-webrtc,ca-bundle,libsodium,libxml2,oniguruma,zlib,gmp,libiconv,curl,openssl,libzip,sqlite,zstd'
 "$package_bin/php" -n "$repository_root/tools/package.php" \
 	--repository-root="$repository_root" \
 	--target="$target" \

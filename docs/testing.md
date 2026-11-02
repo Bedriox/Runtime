@@ -75,7 +75,7 @@ Before Runtime is installed into Bedriox, the artifact must pass its own native
 suite. Integration then checks Bedriox CLI version output, startup, server-list
 discovery, clean shutdown, and the full existing repository and workspace
 regression gates. Runtime integration must not change protocol admission,
-RakNet behavior, world output, gameplay defaults, or the client journey.
+NetherNet behavior, world output, gameplay defaults, or the client journey.
 
 ## Independent evidence
 

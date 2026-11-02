@@ -26,7 +26,7 @@ case "$(uname -s)" in
 		;;
 esac
 
-source_ids='php zlib gmp libiconv curl openssl libzip sqlite zstd leveldb php-leveldb ca-bundle libsodium libxml2 oniguruma'
+source_ids='php zlib gmp libiconv curl openssl libzip sqlite zstd leveldb php-leveldb libdatachannel libjuice plog usrsctp ext-webrtc ca-bundle libsodium libxml2 oniguruma'
 for source_id in $source_ids; do
 	url=$(php "$repository_root/tools/manifest.php" source "$source_id" url) || runtime_die "missing URL for source: $source_id"
 	expected=$(php "$repository_root/tools/manifest.php" source "$source_id" sha256) || runtime_die "missing SHA-256 for source: $source_id"

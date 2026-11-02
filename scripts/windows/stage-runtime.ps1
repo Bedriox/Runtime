@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory = $true)][string] $PhpSource,
     [Parameter(Mandatory = $true)][string] $RuntimeStage,
     [Parameter(Mandatory = $true)][string] $LevelDbDll,
+    [Parameter(Mandatory = $true)][string] $DataChannelDll,
     [Parameter(Mandatory = $true)][string] $VcRuntimeDirectory,
     [Parameter(Mandatory = $true)][ValidateSet('x64', 'arm64')][string] $Architecture,
     [Parameter(Mandatory = $true)][string] $RepositoryRoot,
@@ -107,10 +108,13 @@ if (-not [System.IO.Path]::IsPathRooted($RuntimeStage) -or (Test-Path -LiteralPa
 }
 if (-not (Test-Path -LiteralPath $LevelDbDll -PathType Leaf)) { throw "Reviewed LevelDB DLL is missing: $LevelDbDll" }
 $levelDbResolved = (Resolve-Path -LiteralPath $LevelDbDll).Path
+if (-not (Test-Path -LiteralPath $DataChannelDll -PathType Leaf)) { throw "Reviewed libdatachannel DLL is missing: $DataChannelDll" }
+$dataChannelResolved = (Resolve-Path -LiteralPath $DataChannelDll).Path
 Assert-PathBelow $phpRoot $invocation 'PHP source root'
 Assert-PathBelow $report $invocation 'Report root'
 Assert-PathBelow $RuntimeStage $invocation 'Runtime stage'
 Assert-PathBelow $levelDbResolved $invocation 'Reviewed LevelDB DLL'
+Assert-PathBelow $dataChannelResolved $invocation 'Reviewed libdatachannel DLL'
 
 $dumpbinCommand = Get-Command dumpbin.exe -CommandType Application -ErrorAction Stop
 $dumpbin = $dumpbinCommand.Source
@@ -142,6 +146,11 @@ if ($candidates.ContainsKey($levelDbName) -and (Get-Sha256 $candidates[$levelDbN
     throw 'The snapshot and reviewed LevelDB DLL disagree.'
 }
 $candidates[$levelDbName] = $levelDbResolved
+$dataChannelName = [System.IO.Path]::GetFileName($DataChannelDll).ToLowerInvariant()
+if ($candidates.ContainsKey($dataChannelName) -and (Get-Sha256 $candidates[$dataChannelName]) -ne (Get-Sha256 $DataChannelDll)) {
+    throw 'The snapshot and reviewed libdatachannel DLL disagree.'
+}
+$candidates[$dataChannelName] = $dataChannelResolved
 
 $crtDlls = @(Get-ChildItem -LiteralPath $vcRuntime -Filter *.dll -File)
 if ($crtDlls.Count -eq 0 -or $crtDlls.Count -gt 32) {

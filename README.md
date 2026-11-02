@@ -15,7 +15,7 @@ published qualification suite.
 - Reproducible, hash-verified PHP 8.4 builds
 - Native Bedrock LevelDB compatibility
 - Ready-to-use TLS and public CA configuration
-- SQLite, ZIP, GMP, sockets, Sodium, mbstring, Phar, and OPcache support
+- SQLite, ZIP, GMP, sockets, Sodium, mbstring, Phar, OPcache, and WebRTC data-channel support
 - Relocatable packages that install directly into Bedriox's `bin/` directory
 - Native qualification on Windows, Linux, and macOS
 
@@ -90,6 +90,7 @@ bin/
 |-- php.exe or php
 |-- php.ini
 |-- ext/
+|-- lib/
 |-- lib/
 |-- certs/cacert.pem
 |-- config/openssl.cnf

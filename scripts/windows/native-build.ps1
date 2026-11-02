@@ -133,7 +133,7 @@ $sevenZip = Get-ChildItem -LiteralPath $sdkRoot -Filter 7za.exe -File -Recurse |
 if ($null -eq $sevenZip) { throw 'The pinned PHP SDK archive does not contain 7za.exe.' }
 
 $expanded = @{ 'php-sdk-binary-tools' = $sdkDestination }
-foreach ($id in @('php', 'leveldb', 'php-leveldb', 'cmake-windows-x86_64')) {
+foreach ($id in @('php', 'leveldb', 'php-leveldb', 'libdatachannel', 'libjuice', 'plog', 'usrsctp', 'ext-webrtc', 'cmake-windows-x86_64')) {
     $verifiedInput = Get-Input -Id $id
     $destination = Join-Path $sourceRoot $id
     Expand-PinnedArchive -VerifiedInput $verifiedInput -Destination $destination -SevenZip $sevenZip.FullName -ScratchRoot $workRoot
@@ -158,6 +158,11 @@ foreach ($dependencyInput in $dependencyInputs) {
 $phpSource = Get-SourceRoot -Directory $expanded.php -Marker 'buildconf.bat'
 $leveldbSource = Get-SourceRoot -Directory $expanded.leveldb -Marker 'CMakeLists.txt'
 $extensionSource = Get-SourceRoot -Directory $expanded.'php-leveldb' -Marker 'config.w32'
+$libdatachannelSource = Get-SourceRoot -Directory $expanded.libdatachannel -Marker 'CMakeLists.txt'
+$libjuiceSource = Get-SourceRoot -Directory $expanded.libjuice -Marker 'CMakeLists.txt'
+$plogSource = Get-SourceRoot -Directory $expanded.plog -Marker 'CMakeLists.txt'
+$usrsctpSource = Get-SourceRoot -Directory $expanded.usrsctp -Marker 'CMakeLists.txt'
+$webrtcExtensionSource = Get-SourceRoot -Directory $expanded.'ext-webrtc' -Marker 'config.w32'
 $cmakeRoot = $expanded.'cmake-windows-x86_64'
 $cmake = Get-ChildItem -LiteralPath $cmakeRoot -Filter cmake.exe -File -Recurse | Select-Object -First 1
 if ($null -eq $cmake) { throw 'The pinned CMake input does not contain cmake.exe.' }
@@ -170,7 +175,7 @@ if (-not (Test-Path -LiteralPath $starter -PathType Leaf)) {
 
 $driver = Join-Path $PSScriptRoot 'native-build.cmd'
 $stageScript = Join-Path $PSScriptRoot 'stage-runtime.ps1'
-foreach ($path in @($starter, $driver, $stageScript, $phpSource, $depsSource, $leveldbSource, $extensionSource, $workRoot, $runtimeStage, $cmake.FullName, $RepositoryRoot, $InvocationRoot)) {
+foreach ($path in @($starter, $driver, $stageScript, $phpSource, $depsSource, $leveldbSource, $extensionSource, $libdatachannelSource, $libjuiceSource, $plogSource, $usrsctpSource, $webrtcExtensionSource, $workRoot, $runtimeStage, $cmake.FullName, $RepositoryRoot, $InvocationRoot)) {
     Assert-BatchSafePath -Path $path
 }
 
@@ -180,6 +185,11 @@ $nativeEnvironment = [ordered] @{
     BEDRIOX_NATIVE_PHP_DEPS_SOURCE = $depsSource
     BEDRIOX_NATIVE_LEVELDB_SOURCE = $leveldbSource
     BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE = $extensionSource
+    BEDRIOX_NATIVE_LIBDATACHANNEL_SOURCE = $libdatachannelSource
+    BEDRIOX_NATIVE_LIBJUICE_SOURCE = $libjuiceSource
+    BEDRIOX_NATIVE_PLOG_SOURCE = $plogSource
+    BEDRIOX_NATIVE_USRSCTP_SOURCE = $usrsctpSource
+    BEDRIOX_NATIVE_WEBRTC_EXTENSION_SOURCE = $webrtcExtensionSource
     BEDRIOX_NATIVE_WORK_ROOT = $workRoot
     BEDRIOX_NATIVE_RUNTIME_STAGE = $runtimeStage
     BEDRIOX_NATIVE_CMAKE_EXE = $cmake.FullName

@@ -13,6 +13,11 @@
             "php",
             "leveldb",
             "php-leveldb",
+            "libdatachannel",
+            "libjuice",
+            "plog",
+            "usrsctp",
+            "ext-webrtc",
             "ca-bundle",
             "php-sdk-binary-tools",
             "cmake-windows-x86_64",
@@ -63,6 +68,56 @@
             "archiveType": "tar.gz",
             "license": "PHP-3.01",
             "licenseFile": "licenses/pmmp-php-leveldb-PHP-3.01.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "libdatachannel": {
+            "commit": "443f6934d9007eb7076ab7825ba330f355fcbead",
+            "url": "https://codeload.github.com/paullouisageneau/libdatachannel/tar.gz/443f6934d9007eb7076ab7825ba330f355fcbead",
+            "sha256": "436c9f61892b6664c0d830b4c9526dc59309c8c9f90e71e1b46947dfe8ad5d76",
+            "bytes": 52654612,
+            "archiveType": "tar.gz",
+            "license": "MPL-2.0",
+            "licenseFile": "licenses/libdatachannel-MPL-2.0.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "libjuice": {
+            "commit": "3c40a3545b6b1b62c7adee7f8f2bd58aa290afd6",
+            "url": "https://codeload.github.com/paullouisageneau/libjuice/tar.gz/3c40a3545b6b1b62c7adee7f8f2bd58aa290afd6",
+            "sha256": "a6b1d55338ea12adc0177eaafd9521ac0101b6a8716c71024a668f4896fd6b7c",
+            "bytes": 108329,
+            "archiveType": "tar.gz",
+            "license": "MPL-2.0",
+            "licenseFile": "licenses/libjuice-MPL-2.0.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "plog": {
+            "commit": "94899e0b926ac1b0f4750bfbd495167b4a6ae9ef",
+            "url": "https://codeload.github.com/SergiusTheBest/plog/tar.gz/94899e0b926ac1b0f4750bfbd495167b4a6ae9ef",
+            "sha256": "92a08bce559b5f28aa88d3fd9071567414b9f43a83fe2a05a6dd14f1da536072",
+            "bytes": 206598,
+            "archiveType": "tar.gz",
+            "license": "MIT",
+            "licenseFile": "licenses/plog-MIT.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "usrsctp": {
+            "commit": "fec583d54493f879d2ae44a743423bf8a04371ab",
+            "url": "https://codeload.github.com/paullouisageneau/usrsctp/tar.gz/fec583d54493f879d2ae44a743423bf8a04371ab",
+            "sha256": "e5c114afe73c9a0ec419fab5f5b3f63f3ce57b09b90d06ea85e63dca8aed3e7c",
+            "bytes": 773875,
+            "archiveType": "tar.gz",
+            "license": "BSD-3-Clause",
+            "licenseFile": "licenses/usrsctp-BSD-3-Clause.txt",
+            "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
+        },
+        "ext-webrtc": {
+            "commit": "2858b33fee03e90a71ad2a294264b642db48a13e",
+            "url": "https://codeload.github.com/axolotl-pm/ext-webrtc/tar.gz/2858b33fee03e90a71ad2a294264b642db48a13e",
+            "sha256": "6c13c7bc26985db7a0117730340df868f30e38e1e6926af92ea474397d30b8c4",
+            "bytes": 39996,
+            "archiveType": "tar.gz",
+            "license": "MIT",
+            "licenseFile": "licenses/ext-webrtc-MIT.txt",
             "targets": ["windows-x86_64", "linux-x86_64", "linux-arm64", "macos-x86_64", "macos-arm64", "windows-arm64"]
         },
         "ca-bundle": {

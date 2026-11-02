@@ -7,7 +7,7 @@ Bedriox. It owns build orchestration, immutable dependency manifests, native
 library and extension compilation, package layout, runtime qualification,
 checksums, and third-party notices.
 
-It does not own Bedriox gameplay, world formats, Bedrock packets, RakNet, or
+It does not own Bedriox gameplay, world formats, Bedrock packets, NetherNet, or
 server configuration. Keep server integration in `Bedriox`, protocol behavior
 in `Protocol`, registries in `Data`, and architectural decisions in reviewed
 design proposals.

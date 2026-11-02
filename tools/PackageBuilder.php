@@ -181,8 +181,12 @@ final class PackageBuilder
             }
             $files[] = strtolower($relative);
         }
-        if (!in_array('php.exe', $files, true) || !in_array('ext/php_leveldb.dll', $files, true) || !in_array('leveldb.dll', $files, true)) {
-            throw new RuntimeException('Windows runtime stage is missing php.exe or the LevelDB shared-library closure.');
+        if (!in_array('php.exe', $files, true)
+            || !in_array('ext/php_leveldb.dll', $files, true)
+            || !in_array('leveldb.dll', $files, true)
+            || !in_array('ext/php_webrtc.dll', $files, true)
+            || !in_array('datachannel.dll', $files, true)) {
+            throw new RuntimeException('Windows runtime stage is missing PHP or a required native extension closure.');
         }
     }
 

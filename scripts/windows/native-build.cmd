@@ -12,6 +12,11 @@ if not defined BEDRIOX_NATIVE_STAGE_SCRIPT exit /b 18
 if not defined BEDRIOX_NATIVE_REPOSITORY_ROOT exit /b 19
 if not defined BEDRIOX_NATIVE_INVOCATION_ROOT exit /b 20
 if not defined BEDRIOX_NATIVE_ARCHITECTURE exit /b 62
+if not defined BEDRIOX_NATIVE_LIBDATACHANNEL_SOURCE exit /b 80
+if not defined BEDRIOX_NATIVE_LIBJUICE_SOURCE exit /b 81
+if not defined BEDRIOX_NATIVE_PLOG_SOURCE exit /b 82
+if not defined BEDRIOX_NATIVE_USRSCTP_SOURCE exit /b 83
+if not defined BEDRIOX_NATIVE_WEBRTC_EXTENSION_SOURCE exit /b 84
 if not defined VCToolsRedistDir exit /b 63
 for %%I in ("%VCToolsRedistDir%\%BEDRIOX_NATIVE_ARCHITECTURE%\Microsoft.VC143.CRT") do set "VC_RUNTIME_DIR=%%~fI"
 if not exist "%VC_RUNTIME_DIR%\vcruntime140.dll" exit /b 64
@@ -20,6 +25,11 @@ set "PHP_SOURCE=%BEDRIOX_NATIVE_PHP_SOURCE%"
 set "PHP_DEPS_SOURCE=%BEDRIOX_NATIVE_PHP_DEPS_SOURCE%"
 set "LEVELDB_SOURCE=%BEDRIOX_NATIVE_LEVELDB_SOURCE%"
 set "LEVELDB_EXTENSION_SOURCE=%BEDRIOX_NATIVE_LEVELDB_EXTENSION_SOURCE%"
+set "LIBDATACHANNEL_SOURCE=%BEDRIOX_NATIVE_LIBDATACHANNEL_SOURCE%"
+set "LIBJUICE_SOURCE=%BEDRIOX_NATIVE_LIBJUICE_SOURCE%"
+set "PLOG_SOURCE=%BEDRIOX_NATIVE_PLOG_SOURCE%"
+set "USRSCTP_SOURCE=%BEDRIOX_NATIVE_USRSCTP_SOURCE%"
+set "WEBRTC_EXTENSION_SOURCE=%BEDRIOX_NATIVE_WEBRTC_EXTENSION_SOURCE%"
 set "WORK_ROOT=%BEDRIOX_NATIVE_WORK_ROOT%"
 set "RUNTIME_STAGE=%BEDRIOX_NATIVE_RUNTIME_STAGE%"
 set "CMAKE_EXE=%BEDRIOX_NATIVE_CMAKE_EXE%"
@@ -28,15 +38,22 @@ set "STAGE_SCRIPT=%BEDRIOX_NATIVE_STAGE_SCRIPT%"
 if not exist "%PHP_SOURCE%\buildconf.bat" exit /b 21
 if not exist "%LEVELDB_SOURCE%\CMakeLists.txt" exit /b 22
 if not exist "%LEVELDB_EXTENSION_SOURCE%\config.w32" exit /b 23
+if not exist "%LIBDATACHANNEL_SOURCE%\CMakeLists.txt" exit /b 85
+if not exist "%WEBRTC_EXTENSION_SOURCE%\config.w32" exit /b 86
 if not exist "%CMAKE_EXE%" exit /b 24
 if not exist "%STAGE_SCRIPT%" exit /b 61
 
 for %%I in ("%PHP_SOURCE%\..\deps") do set "PHP_BUILD=%%~fI"
 set "LEVELDB_BUILD=%WORK_ROOT%\leveldb"
+set "LIBDATACHANNEL_BUILD=%WORK_ROOT%\libdatachannel"
+set "LIBDATACHANNEL_WORK=%WORK_ROOT%\libdatachannel-source"
 if exist "%PHP_BUILD%" exit /b 25
 if exist "%LEVELDB_BUILD%" exit /b 26
+if exist "%LIBDATACHANNEL_BUILD%" exit /b 87
+if exist "%LIBDATACHANNEL_WORK%" exit /b 88
 mkdir "%PHP_BUILD%" || exit /b 27
 mkdir "%LEVELDB_BUILD%" || exit /b 28
+mkdir "%LIBDATACHANNEL_WORK%" || exit /b 89
 
 xcopy "%PHP_DEPS_SOURCE%\*" "%PHP_BUILD%\" /E /I /Q /Y >nul || exit /b 29
 
@@ -81,13 +98,28 @@ if not exist "%PHP_BUILD%\bin\leveldb.dll" exit /b 50
 if not exist "%PHP_BUILD%\lib\leveldb.lib" exit /b 51
 if not exist "%PHP_BUILD%\include\leveldb\db.h" exit /b 52
 
+xcopy "%LIBDATACHANNEL_SOURCE%\*" "%LIBDATACHANNEL_WORK%\" /E /I /Q /Y >nul || exit /b 90
+if not exist "%LIBDATACHANNEL_WORK%\deps" mkdir "%LIBDATACHANNEL_WORK%\deps" || exit /b 91
+xcopy "%LIBJUICE_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\libjuice\" /E /I /Q /Y >nul || exit /b 92
+xcopy "%PLOG_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\plog\" /E /I /Q /Y >nul || exit /b 93
+xcopy "%USRSCTP_SOURCE%\*" "%LIBDATACHANNEL_WORK%\deps\usrsctp\" /E /I /Q /Y >nul || exit /b 94
+set "CL=/experimental:deterministic /pathmap:%WORK_ROOT%=. %CL%"
+"%CMAKE_EXE%" -S "%LIBDATACHANNEL_WORK%" -B "%LIBDATACHANNEL_BUILD%" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_INSTALL_PREFIX="%PHP_BUILD%" -DBUILD_SHARED_LIBS=ON -DBUILD_SHARED_DEPS_LIBS=OFF -DNO_EXAMPLES=ON -DNO_TESTS=ON -DNO_MEDIA=ON -DNO_WEBSOCKET=ON -DOPENSSL_ROOT_DIR="%PHP_BUILD%" || exit /b 95
+"%CMAKE_EXE%" --build "%LIBDATACHANNEL_BUILD%" --config Release || exit /b 96
+"%CMAKE_EXE%" --install "%LIBDATACHANNEL_BUILD%" --config Release || exit /b 97
+if not exist "%PHP_BUILD%\bin\datachannel.dll" exit /b 98
+if not exist "%PHP_BUILD%\lib\datachannel.lib" exit /b 99
+
 if exist "%PHP_SOURCE%\ext\leveldb" exit /b 33
 mkdir "%PHP_SOURCE%\ext\leveldb" || exit /b 34
 xcopy "%LEVELDB_EXTENSION_SOURCE%\*" "%PHP_SOURCE%\ext\leveldb\" /E /I /Q /Y >nul || exit /b 35
+if exist "%PHP_SOURCE%\ext\webrtc" exit /b 100
+mkdir "%PHP_SOURCE%\ext\webrtc" || exit /b 101
+xcopy "%WEBRTC_EXTENSION_SOURCE%\*" "%PHP_SOURCE%\ext\webrtc\" /E /I /Q /Y >nul || exit /b 102
 
 pushd "%PHP_SOURCE%" || exit /b 36
 call buildconf.bat --force || (popd & exit /b 37)
-call configure.bat --disable-all --enable-cli --enable-zts --enable-ctype --with-dom --enable-fileinfo --enable-filter --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --with-simplexml --enable-sockets --enable-tokenizer --with-xml --enable-xmlreader --enable-xmlwriter --enable-zlib --enable-zip --with-prefix=bedriox-runtime --with-php-build="..\deps" --with-iconv --with-libxml --with-openssl --with-curl --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared
+call configure.bat --disable-all --enable-cli --enable-zts --enable-ctype --with-dom --enable-fileinfo --enable-filter --enable-mbstring --enable-opcache --enable-pdo --enable-phar --enable-session --with-simplexml --enable-sockets --enable-tokenizer --with-xml --enable-xmlreader --enable-xmlwriter --enable-zlib --enable-zip --with-prefix=bedriox-runtime --with-php-build="..\deps" --with-iconv --with-libxml --with-openssl --with-curl --with-sodium --with-sqlite3 --with-pdo-sqlite --with-gmp --with-leveldb=shared --enable-webrtc=shared --with-libdatachannel="..\deps"
 if errorlevel 1 (popd & exit /b 38)
 nmake || (popd & exit /b 39)
 nmake snap || (popd & exit /b 40)
@@ -95,12 +127,14 @@ cl /? > "%WORK_ROOT%\compiler-identity.txt" 2>&1
 link /? > "%WORK_ROOT%\linker-identity.txt" 2>&1
 popd
 
-powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%STAGE_SCRIPT%" -PhpSource "%PHP_SOURCE%" -RuntimeStage "%RUNTIME_STAGE%" -LevelDbDll "%PHP_BUILD%\bin\leveldb.dll" -VcRuntimeDirectory "%VC_RUNTIME_DIR%" -Architecture "%BEDRIOX_NATIVE_ARCHITECTURE%" -RepositoryRoot "%BEDRIOX_NATIVE_REPOSITORY_ROOT%" -InvocationRoot "%BEDRIOX_NATIVE_INVOCATION_ROOT%" -ReportRoot "%WORK_ROOT%" || exit /b 53
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%STAGE_SCRIPT%" -PhpSource "%PHP_SOURCE%" -RuntimeStage "%RUNTIME_STAGE%" -LevelDbDll "%PHP_BUILD%\bin\leveldb.dll" -DataChannelDll "%PHP_BUILD%\bin\datachannel.dll" -VcRuntimeDirectory "%VC_RUNTIME_DIR%" -Architecture "%BEDRIOX_NATIVE_ARCHITECTURE%" -RepositoryRoot "%BEDRIOX_NATIVE_REPOSITORY_ROOT%" -InvocationRoot "%BEDRIOX_NATIVE_INVOCATION_ROOT%" -ReportRoot "%WORK_ROOT%" || exit /b 53
 set "PHP_BIN=%RUNTIME_STAGE%\"
 set "PHP_LEVELDB_DLL=%RUNTIME_STAGE%\ext\php_leveldb.dll"
 if not exist "%PHP_BIN%php.exe" exit /b 54
 if not exist "%PHP_LEVELDB_DLL%" exit /b 55
 if not exist "%PHP_BIN%leveldb.dll" exit /b 56
+if not exist "%PHP_BIN%datachannel.dll" exit /b 103
+if not exist "%RUNTIME_STAGE%\ext\php_webrtc.dll" exit /b 104
 
 dumpbin /nologo /dependents "%PHP_LEVELDB_DLL%" > "%WORK_ROOT%\php-leveldb-dependencies.txt" || exit /b 57
 findstr /I /L /C:"leveldb.dll" "%WORK_ROOT%\php-leveldb-dependencies.txt" >nul || exit /b 58

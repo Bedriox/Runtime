@@ -32,6 +32,7 @@ try {
     file_put_contents($native . DIRECTORY_SEPARATOR . 'php', 'binary');
     file_put_contents($native . DIRECTORY_SEPARATOR . 'php.ini', 'ambient path must not survive');
     file_put_contents($native . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'leveldb.so', 'leveldb');
+    file_put_contents($native . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'webrtc.so', 'webrtc');
     file_put_contents($native . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'opcache.so', 'opcache');
     $safeLinkCreated = function_exists('symlink') && @symlink('php', $native . DIRECTORY_SEPARATOR . 'phar');
 
@@ -63,6 +64,7 @@ try {
     $template = "extension_dir = \"\${BEDRIOX_RUNTIME_ROOT}/ext\"\n@BEDRIOX_DYNAMIC_EXTENSIONS@\n";
     $ini = PackageBuilder::renderIni($template, $package);
     packageTestEnsure(str_contains($ini, 'extension = "${BEDRIOX_RUNTIME_ROOT}/ext/leveldb.so"'), 'Shared LevelDB was not enabled.');
+    packageTestEnsure(str_contains($ini, 'extension = "${BEDRIOX_RUNTIME_ROOT}/ext/webrtc.so"'), 'Shared WebRTC was not enabled.');
     packageTestEnsure(str_contains($ini, 'zend_extension = "${BEDRIOX_RUNTIME_ROOT}/ext/opcache.so"'), 'Shared OPcache was not enabled as a Zend extension.');
     packageTestEnsure(!str_contains($ini, '@BEDRIOX_DYNAMIC_EXTENSIONS@'), 'Dynamic extension marker survived rendering.');
     file_put_contents($package . DIRECTORY_SEPARATOR . 'php.ini', $ini);
@@ -94,7 +96,9 @@ try {
     file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php.exe', 'pe');
     file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php84.dll', 'engine');
     file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'leveldb.dll', 'leveldb');
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'datachannel.dll', 'datachannel');
     file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'php_leveldb.dll', 'extension');
+    file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'php_webrtc.dll', 'extension');
     PackageBuilder::assertNativeRuntimeLayout($windowsRuntime, 'windows-x86_64');
 
     file_put_contents($windowsRuntime . DIRECTORY_SEPARATOR . 'php.lib', 'development');
